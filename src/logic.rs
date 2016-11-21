@@ -314,6 +314,28 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
     let (high_file, low_file) = 
         if start.file > end.file {(start.file, end.file)} else {(end.file, start.file)};
 
+    // check castling
+    match piece.color {
+        Color::White => {
+            if end.rank == 0 && end.file == 6 && board.castling_availability.white_kingside {
+                return !is_king_in_check(board, Color::White) && 
+                    !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 5 })
+            } else if end.rank == 0 && end.file == 2 && board.castling_availability.white_queenside {
+                return !is_king_in_check(board, Color::White) &&
+                    !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 3 })
+            }
+        },
+        Color::Black => {
+            if end.rank == 7 && end.file == 6 && board.castling_availability.black_kingside {
+                return !is_king_in_check(board, Color::Black) &&
+                    !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 5 })
+            } else if end.rank == 7 && end.file == 2 && board.castling_availability.black_queenside {
+                return !is_king_in_check(board, Color::Black) &&
+                    !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 3 })
+            }
+        }
+    }
+
     if high_rank - low_rank > 1 || high_file - low_file > 1 {
         return false
     }
@@ -436,6 +458,30 @@ mod test {
         assert!(!logic::is_valid_move_string(&board, "d5d6"));
         assert!(!logic::is_valid_move_string(&board, "d5c6"));
         assert!(!logic::is_valid_move_string(&board, "d5d4"));
+    }
+
+    #[test]
+    fn test_valid_king_castle_kingside() {
+        let board = Board::from_fen("r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4");
+        assert!(logic::is_valid_move_string(&board, "e1g1"));
+    }
+
+    #[test]
+    fn test_valid_king_castle_queenside() {
+        let board = Board::from_fen("r3kbnr/pppqpppp/2n5/1B1p4/3P2b1/2N1PN2/PPP2PPP/R1BQK2R b KQkq - 4 5");
+        assert!(logic::is_valid_move_string(&board, "e8c8"));
+    }
+
+    #[test]
+    fn test_valid_king_castle_in_check() {
+        let board = Board::from_fen("r1bqk2r/pppp1ppp/2n2n2/4p3/1b2P3/3P1N2/PPP1BPPP/RNBQK2R w KQkq - 1 5");
+        assert!(!logic::is_valid_move_string(&board, "e1g1"));
+    }
+
+    #[test]
+    fn test_valid_king_castle_passing_through_check() {
+        let board = Board::from_fen("r3kbnr/pppb1ppp/2nqp3/1B1p2B1/3P4/2N1PN2/PPP2PPP/R2Q1RK1 b kq - 4 7");
+        assert!(!logic::is_valid_move_string(&board, "e8c8"));
     }
 
     #[test]
