@@ -1,6 +1,7 @@
 mod board;
 mod color;
 mod piece;
+mod logic;
 
 use std::io;
 
@@ -65,7 +66,7 @@ fn ponder_hit() {
 }
 
 fn tests() {
-	let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	board.print_board();
 	board = Board::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1");
 	board.print_board();
