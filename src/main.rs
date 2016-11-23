@@ -2,6 +2,7 @@ mod board;
 mod color;
 mod evaluation;
 mod logic;
+mod moves;
 mod piece;
 
 use std::io;
@@ -68,9 +69,8 @@ fn ponder_hit() {
 
 fn evaluate_position(input: &Vec<&str>) {
     if input.len() > 1 {
-        let mut s = input[1].to_owned();
-        s.push_str(" ");
-        s.push_str(input[2]);		
+        let depth = input[1].parse::<u8>().unwrap();
+        let mut s = input[2].to_owned();
         s.push_str(" ");
         s.push_str(input[3]);		
         s.push_str(" ");
@@ -79,8 +79,16 @@ fn evaluate_position(input: &Vec<&str>) {
         s.push_str(input[5]);		
         s.push_str(" ");
         s.push_str(input[6]);		
+        s.push_str(" ");
+        s.push_str(input[7]);		
         let board = Board::from_fen(&s);
-        println!("eval: {}", evaluation::evaluate_position(&board));
+        let mut line = Vec::new();
+        println!("eval: {}", evaluation::pvs(&board, -500.0, 500.0, depth, &mut line));
+        print!("bestmoves: ");
+        for m in line {
+            print!("{}", m);
+        }
+        println!("");
     }
 }
 

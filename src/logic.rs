@@ -84,6 +84,21 @@ fn is_valid_move(board: &Board, start: Location, end: Location) -> bool {
 	}
 }
 
+pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
+    let mut output = Vec::new();
+    if let Some(p) = board.board[start.rank as usize][start.file as usize] {
+        for rank in 0..8 {
+            for file in 0..8 {
+                let new_loc = Location { rank: rank, file: file };
+                if is_valid_move(board, start, new_loc) {
+                    output.push(new_loc);
+                }
+            }
+        }
+    }
+    output
+}
+
 fn would_king_be_in_check(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
 	// TODO: handle updating castling, en passant, etc
 	let mut new_board = board.clone();
@@ -143,6 +158,9 @@ fn is_king_in_check(board: &Board, color: Color) -> bool {
 }
 
 fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
+    if start == end {
+        return false
+    }
 	// no capture
 	if start.file == end.file {
 		if board.board[end.rank as usize][end.file as usize] == None {
@@ -157,7 +175,7 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
 			}
 			match piece.color {
 				Color::White => return end.rank == start.rank + 1,
-				Color::Black => return end.rank == start.rank - 1
+				Color::Black => return end.rank as i8 == start.rank as i8 - 1
 			}
 		}
 	} else if ((start.file as i8)- (end.file as i8)).abs() == 1 {
@@ -174,7 +192,7 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
 					Color::White => return p.color == Color::Black &&
 						end.rank == start.rank + 1,
 					Color::Black => return p.color == Color::White &&
-						end.rank == start.rank - 1
+						end.rank as i8 == start.rank as i8 - 1
 				}
 			}
 		}
@@ -183,6 +201,9 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
 }
 
 fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
+    if start == end {
+        return false
+    }
 	let (high_rank, low_rank) = 
 		if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
 	let (high_file, low_file) = 
@@ -243,6 +264,9 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
 }
 
 fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
+    if start == end {
+        return false
+    }
     let (high_rank, low_rank) = 
         if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
     let (high_file, low_file) = 
@@ -274,6 +298,9 @@ fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Locat
 }
 
 fn is_valid_rook_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
+    if start == end {
+        return false
+    }
     let (high_rank, low_rank) = 
         if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
     let (high_file, low_file) = 
@@ -309,6 +336,9 @@ fn is_valid_queen_move(board: &Board, piece: Piece, start: Location, end: Locati
 }
 
 fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
+    if start == end {
+        return false
+    }
     let (high_rank, low_rank) = 
         if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
     let (high_file, low_file) = 
@@ -318,20 +348,28 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
     match piece.color {
         Color::White => {
             if end.rank == 0 && end.file == 6 && board.castling_availability.white_kingside {
-                return !is_king_in_check(board, Color::White) && 
-                    !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 5 })
+                if board.board[0][5] == None && board.board[0][6] == None {
+                    return !is_king_in_check(board, Color::White) && 
+                        !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 5 })
+                }
             } else if end.rank == 0 && end.file == 2 && board.castling_availability.white_queenside {
-                return !is_king_in_check(board, Color::White) &&
-                    !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 3 })
+                if board.board[0][3] == None && board.board[0][2] == None {
+                    return !is_king_in_check(board, Color::White) &&
+                        !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 3 })
+                }
             }
         },
         Color::Black => {
             if end.rank == 7 && end.file == 6 && board.castling_availability.black_kingside {
-                return !is_king_in_check(board, Color::Black) &&
-                    !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 5 })
+                if board.board[7][5] == None && board.board[7][6] == None {
+                    return !is_king_in_check(board, Color::Black) &&
+                        !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 5 })
+                }
             } else if end.rank == 7 && end.file == 2 && board.castling_availability.black_queenside {
-                return !is_king_in_check(board, Color::Black) &&
-                    !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 3 })
+                if board.board[7][3] == None && board.board[7][2] == None { 
+                    return !is_king_in_check(board, Color::Black) &&
+                        !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 3 })
+                }
             }
         }
     }
@@ -458,6 +496,12 @@ mod test {
         assert!(!logic::is_valid_move_string(&board, "d5d6"));
         assert!(!logic::is_valid_move_string(&board, "d5c6"));
         assert!(!logic::is_valid_move_string(&board, "d5d4"));
+    }
+
+    #[test]
+    fn test_valid_king_castle_invalid() {
+        let board = Board::from_fen("rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 3");
+        assert!(!logic::is_valid_move_string(&board, "e1c1"));
     }
 
     #[test]

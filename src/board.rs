@@ -1,5 +1,6 @@
 use piece::{Piece, Type};
 use color::Color;
+use std::char;
 
 /// 0 <= file, rank <= 7
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -9,6 +10,23 @@ pub struct Location {
 }
 
 impl Location {
+    pub fn to_notation(&self) -> String {
+        let mut output = "".to_owned();
+        match self.file {
+            0 => output.push('a'),
+            1 => output.push('b'),
+            2 => output.push('c'),
+            3 => output.push('d'),
+            4 => output.push('e'),
+            5 => output.push('f'),
+            6 => output.push('g'),
+            7 => output.push('h'),
+            _ => ()
+        }
+        output.push(char::from_digit((self.rank + 1) as u32, 10).unwrap());
+        output
+    }
+
     pub fn parse_notation(s: &str) -> Location {
         let mut output_location = Location { file: 0, rank: 0 };
         let string = s.to_string();
