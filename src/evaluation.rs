@@ -88,6 +88,7 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                             if score > alpha {
                                 alpha = score;
                                 let original_loc = Location { rank: rank as u8, file: file as u8 };
+                                line.clear();
                                 line.push(original_loc.to_notation());
                                 line.push(move_loc.to_notation());
                                 line.push(" ".to_owned());
