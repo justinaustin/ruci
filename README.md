@@ -3,6 +3,6 @@
 after that move (update en passant, etc)
 * better position evaluation
 * zobrist hashing
-
-
-In the pvs search UPDATE the &list instead of just pushing to it
+* work on checkmate in position evaluation...right now it evaluates
+to -500 or some number but then it will still calculate black taking
+the king after white takes it and values the position as even...
