@@ -19,6 +19,7 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let mut knight_diff: f64 = 0.0;
     let mut bishop_diff: f64 = 0.0;
     let mut pawn_diff: f64 = 0.0;
+    let mut mobility_diff: f64 = 0.0;
 
     for rank in 0..8 {
         for file in 0..8 {
@@ -43,6 +44,13 @@ pub fn evaluate_position(board: &Board) -> f64 {
                         king_diff += if p.color == Color::White { 1.0 } else { -1.0 };
                     },
                 }
+                let moves = logic::get_legal_moves(
+                    &board, Location { rank: rank as u8, file: file as u8 });
+                if p.color == Color::White {
+                    mobility_diff += moves.len() as f64;
+                } else {
+                    mobility_diff -= moves.len() as f64;
+                }
             }
         }
     }
@@ -53,8 +61,10 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let knight_weight = KNIGHT_WEIGHT * knight_diff;
     let bishop_weight = BISHOP_WEIGHT * bishop_diff;
     let pawn_weight = PAWN_WEIGHT * pawn_diff;
+    let mobility_weight = MOBILITY_WEIGHT * mobility_diff;
     let mut output = 
-        king_weight + queen_weight + rook_weight + knight_weight + bishop_weight + pawn_weight;
+        king_weight + queen_weight + rook_weight + knight_weight + 
+        bishop_weight + pawn_weight + mobility_weight;
     if board.active_color == Color::Black {
          output *= -1.0
     }
@@ -63,6 +73,8 @@ pub fn evaluate_position(board: &Board) -> f64 {
 
 /// uses principle variation search to return the minimax
 /// of the given position
+///
+/// TODO: line sometimes becomes a vector with more than depth elements...
 pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>) -> f64 {
     if depth == 0 {
         return quiescence(board, alpha, beta)

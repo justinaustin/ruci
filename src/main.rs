@@ -1,9 +1,12 @@
+extern crate rand;
+
 mod board;
 mod color;
 mod evaluation;
 mod logic;
 mod moves;
 mod piece;
+mod zobrist;
 
 use std::io;
 
