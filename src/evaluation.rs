@@ -7,11 +7,68 @@ use logic;
 use piece::{Piece, Type};
 use zobrist::{Entry, Table};
 
+// the following tables are taken from
+// https://chessprogramming.wikispaces.com/Simplified+evaluation+function
+static PAWN_TABLE: [[f64; 8]; 8] = [
+    [0.0,   0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,],
+    [0.5,   0.5, 0.5, 0.5, 0.5, 0.5,  0.5, 0.5,],
+    [0.1,   0.1, 0.2, 0.3, 0.3, 0.2,  0.1, 0.1,],
+    [0.05, 0.05, 0.1,0.25, 0.25,0.1, 0.05,0.05,],
+    [0.0,   0.0, 0.0, 0.2, 0.2, 0.0,  0.0, 0.0,],
+    [0.05,-0.05,-0.1, 0.0, 0.0,-0.1,-0.05,0.05,],
+    [0.05,  0.1, 0.1,-0.2,-0.2, 0.1,  0.1,0.05,],
+    [ 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,],
+];
+
+static KNIGHT_TABLE: [[f64; 8]; 8] = [
+    [-0.5,-0.4,-0.3,-0.3,-0.3,-0.3,-0.4,-0.5,],
+    [-0.4,-0.2, 0.0, 0.0, 0.0, 0.0,-0.2,-0.4,],
+    [-0.3, 0.0, 0.1,0.15,0.15, 0.1, 0.0,-0.3,],
+    [-0.3,0.05,0.15, 0.2, 0.2,0.15,0.05,-0.3,],
+    [-0.3, 0.0,0.15, 0.2, 0.2,0.15, 0.0,-0.3,],
+    [-0.3,0.05, 0.1,0.15,0.15, 0.1,0.05,-0.3,],
+    [-0.4,-0.2, 0.0,0.05,0.05, 0.0,-0.2,-0.4,],
+    [-0.5,-0.4,-0.3,-0.3,-0.3,-0.3,-0.4,-0.5,],
+];
+
+static BISHOP_TABLE: [[f64; 8]; 8] = [
+    [-0.2,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.2,],
+    [-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.1,],
+    [-0.1, 0.0,0.05, 0.1, 0.1,0.05, 0.0,-0.1,],
+    [-0.1,0.05,0.05, 0.1, 0.1,0.05,0.05,-0.1,],
+    [-0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.0,-0.1,],
+    [-0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,-0.1,],
+    [-0.1,0.05, 0.0, 0.0, 0.0, 0.0,0.05,-0.1,],
+    [-0.2,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.2,],
+];
+
+static ROOK_TABLE: [[f64; 8]; 8] = [
+    [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,],
+    [ 0.05,0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [  0.0,0.0, 0.0,0.05,0.05, 0.0, 0.0,  0.0,],
+];
+
+static QUEEN_TABLE: [[f64; 8]; 8] = [
+    [ -0.2,-0.1,-0.1,-0.05,-0.05,-0.1,-0.1,-0.2,],
+    [ -0.1, 0.0, 0.0,  0.0,  0.0, 0.0, 0.0,-0.1,],
+    [ -0.1, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.1,],
+    [-0.05, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.05,],
+    [  0.0, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.05,],
+    [ -0.1,0.05,0.05, 0.05, 0.05,0.05, 0.0,-0.1,],
+    [ -0.1, 0.0,0.05,  0.0,  0.0, 0.0, 0.0,-0.1,],
+    [ -0.2,-0.1,-0.1,-0.05,-0.05,-0.1,-0.1,-0.2,],
+];
+
 const KING_WEIGHT: f64 = 200f64;
 const QUEEN_WEIGHT: f64 = 9f64;
 const ROOK_WEIGHT: f64 = 5f64;
-const KNIGHT_WEIGHT: f64 = 3f64;
-const BISHOP_WEIGHT: f64 = 3f64;
+const KNIGHT_WEIGHT: f64 = 3.2f64;
+const BISHOP_WEIGHT: f64 = 3.3f64;
 const PAWN_WEIGHT: f64 = 1f64;
 const MOBILITY_WEIGHT: f64 = 0.1f64;
 // const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
@@ -24,25 +81,56 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let mut bishop_diff: f64 = 0.0;
     let mut pawn_diff: f64 = 0.0;
     let mut mobility_diff: f64 = 0.0;
+    let mut output = 0.0;
 
     for rank in 0..8 {
         for file in 0..8 {
             if let Some(p) = board.board[rank][file] {
                 match p.piece_type {
                     Type::Pawn => {
-                        pawn_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            pawn_diff += 1.0;
+                            output += PAWN_TABLE[7 - rank][file];
+                        } else {
+                            pawn_diff -= 1.0;
+                            output -= PAWN_TABLE[rank][file];
+                        }
                     },
                     Type::Bishop => {
-                        bishop_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            bishop_diff += 1.0;
+                            output += BISHOP_TABLE[7 - rank][file];
+                        } else {
+                            bishop_diff -= 1.0;
+                            output -= BISHOP_TABLE[rank][file];
+                        }
                     },
                     Type::Knight => {
-                        knight_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            knight_diff += 1.0;
+                            output += KNIGHT_TABLE[7 - rank][file];
+                        } else {
+                            knight_diff -= 1.0;
+                            output -= KNIGHT_TABLE[rank][file];
+                        }
                     },
                     Type::Rook => {
-                        rook_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            rook_diff += 1.0;
+                            output += ROOK_TABLE[7 - rank][file];
+                        } else {
+                            rook_diff -= 1.0;
+                            output -= ROOK_TABLE[rank][file];
+                        }
                     },
                     Type::Queen => {
-                        queen_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            queen_diff += 1.0;
+                            output += QUEEN_TABLE[7 - rank][file];
+                        } else {
+                            queen_diff -= 1.0;
+                            output -= QUEEN_TABLE[rank][file];
+                        }
                     },
                     Type::King => {
                         king_diff += if p.color == Color::White { 1.0 } else { -1.0 };
@@ -66,8 +154,7 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let bishop_weight = BISHOP_WEIGHT * bishop_diff;
     let pawn_weight = PAWN_WEIGHT * pawn_diff;
     let mobility_weight = MOBILITY_WEIGHT * mobility_diff;
-    let mut output = 
-        king_weight + queen_weight + rook_weight + knight_weight + 
+    output += king_weight + queen_weight + rook_weight + knight_weight + 
         bishop_weight + pawn_weight;// + mobility_weight;
     if board.active_color == Color::Black {
          output *= -1.0
