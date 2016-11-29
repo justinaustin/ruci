@@ -1,7 +1,11 @@
+use std::cell::RefMut;
+use std::collections::HashMap;
+
 use board::{Board, Location};
 use color::Color;
 use logic;
 use piece::{Piece, Type};
+use zobrist::{Entry, Table};
 
 const KING_WEIGHT: f64 = 200f64;
 const QUEEN_WEIGHT: f64 = 9f64;
@@ -9,8 +13,8 @@ const ROOK_WEIGHT: f64 = 5f64;
 const KNIGHT_WEIGHT: f64 = 3f64;
 const BISHOP_WEIGHT: f64 = 3f64;
 const PAWN_WEIGHT: f64 = 1f64;
-const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
 const MOBILITY_WEIGHT: f64 = 0.1f64;
+// const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
 
 pub fn evaluate_position(board: &Board) -> f64 {
     let mut king_diff: f64 = 0.0;
@@ -64,7 +68,7 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let mobility_weight = MOBILITY_WEIGHT * mobility_diff;
     let mut output = 
         king_weight + queen_weight + rook_weight + knight_weight + 
-        bishop_weight + pawn_weight + mobility_weight;
+        bishop_weight + pawn_weight;// + mobility_weight;
     if board.active_color == Color::Black {
          output *= -1.0
     }
@@ -75,7 +79,8 @@ pub fn evaluate_position(board: &Board) -> f64 {
 /// of the given position
 ///
 /// TODO: line sometimes becomes a vector with more than depth elements...
-pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>) -> f64 {
+pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>, 
+           table: &mut HashMap<u64, Entry>, zobrist: &Table) -> f64 {
     if depth == 0 {
         return quiescence(board, alpha, beta)
     }
@@ -93,13 +98,29 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                             new_board.board[move_loc.rank as usize][move_loc.file as usize] = Some(p);
                             new_board.active_color = 
                                 if p.color == Color::White {Color::Black} else {Color::White};
-                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
+                            let original_loc = Location { rank: rank as u8, file: file as u8 };
+                            let hash = zobrist.hash(&new_board);
+                            let mut score = 0.0;
+                            if table.contains_key(&hash) {
+                                let e_depth = table.get(&hash).unwrap().depth;
+                                let e_eval = table.get(&hash).unwrap().evaluation;
+                                if e_depth >= depth - 1 {
+                                    score = e_eval;
+                                } else {
+                                    score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                                    table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                                    depth: depth - 1, evaluation: score });
+                                }
+                            } else {
+                                score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                                table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                                depth: depth - 1, evaluation: score });
+                            }
                             if score >= beta {
                                 return beta
                             }
                             if score > alpha {
                                 alpha = score;
-                                let original_loc = Location { rank: rank as u8, file: file as u8 };
                                 line.clear();
                                 line.push(original_loc.to_notation());
                                 line.push(move_loc.to_notation());
