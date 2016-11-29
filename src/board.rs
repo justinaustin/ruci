@@ -185,6 +185,19 @@ impl Board {
         output_board.board[rank] = new_rank;
     }
 
+    // assumes the move is legal
+    // TODO: update for castling, en passant, etc
+    pub fn after_move(&self, start: Location, end: Location) -> Board {
+        let mut new_board = self.clone();
+        if let Some(p) = new_board.board[start.rank as usize][start.file as usize] {
+            new_board.board[start.rank as usize][start.file as usize] = None;
+            new_board.board[end.rank as usize][end.file as usize] = Some(p);
+            new_board.active_color = 
+                if new_board.active_color == Color::White {Color::Black} else {Color::White};
+        }
+        new_board
+    }
+
     pub fn print_board(&self) {
         for rank in (0..8).rev() {
             for file in 0..8 {

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use board::Board;
+use board::{Board, Location};
 use evaluation;
 use zobrist::{Entry, Table};
 
@@ -37,13 +37,35 @@ impl State {
             s.push_str(" ");
             s.push_str(input[7]);
             self.board = Board::from_fen(&s);
+        } else if input[1] == "startpos" {
+            self.board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        }
+        // skip in input until just after the word 'moves'
+        let index = input.iter().position(|&r| r == "moves").unwrap_or(input.len());
+        for i in (index + 1)..input.len() {
+            let m = input[i];
+            let mut start = "".to_owned();
+            let mut end = "".to_owned();
+            // i feel like substring shouldn't be this hard...
+            let mut j = 0;
+            for ch in m.chars() {
+                if j < 2 {
+                    start.push(ch);
+                } else {
+                    end.push(ch);
+                }
+                j += 1;
+            }
+            let start_loc = Location::parse_notation(&start);
+            let end_loc = Location::parse_notation(&end);
+            self.board = self.board.after_move(start_loc, end_loc);
         }
     }
 
     pub fn go(&mut self) {
         let mut depth = 1;
-        let mut line = Vec::new();
-        while depth < 5 {
+        while depth < 4 {
+            let mut line = Vec::new();
             let score = evaluation::pvs(&self.board, -10000.0, 10000.0, depth, 
                                         &mut line, &mut self.hashmap, &self.zobrist) * 100.0;
             print!("info depth {} score cp {:.0} nodes {} time {} pv ", 
