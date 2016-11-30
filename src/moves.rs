@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::f64;
 
 use board::{Board, Location};
 use evaluation;
@@ -67,7 +68,7 @@ impl State {
         let mut best_move = "".to_owned();
         while depth < 5 {
             let mut line = Vec::new();
-            let score = evaluation::pvs(&self.board, -10000.0, 10000.0, depth, 
+            let score = evaluation::pvs(&self.board, f64::NEG_INFINITY, f64::INFINITY, depth, 
                                         &mut line, &mut self.hashmap, &self.zobrist) * 100.0;
             print!("info depth {} score cp {:.0} nodes {} time {} pv ", 
                      depth, score, "1", "1");
@@ -77,6 +78,9 @@ impl State {
             println!("");
             best_move = line[0].clone();
             best_move.push_str(&line[1].clone());
+            if score.is_infinite() {
+                break;
+            }
             depth += 1;
         }
         println!("bestmove {}", best_move);
