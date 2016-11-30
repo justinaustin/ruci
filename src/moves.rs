@@ -64,7 +64,7 @@ impl State {
 
     pub fn go(&mut self) {
         let mut depth = 1;
-        while depth < 4 {
+        while depth < 10 {
             let mut line = Vec::new();
             let score = evaluation::pvs(&self.board, -10000.0, 10000.0, depth, 
                                         &mut line, &mut self.hashmap, &self.zobrist) * 100.0;

@@ -169,7 +169,7 @@ pub fn evaluate_position(board: &Board) -> f64 {
 pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>, 
            table: &mut HashMap<u64, Entry>, zobrist: &Table) -> f64 {
     if depth == 0 {
-        return quiescence(board, alpha, beta)
+        return evaluate_position(board)
     }
     for rank in 0..8 {
         for file in 0..8 {
@@ -180,29 +180,27 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                     for i in 0..legal_moves.len() {
                         if let Some(move_loc) = legal_moves.get(i) {
                             let mut newline = Vec::new();
-                            let mut new_board = board.clone();
-                            new_board.board[rank][file] = None;
-                            new_board.board[move_loc.rank as usize][move_loc.file as usize] = Some(p);
-                            new_board.active_color = 
-                                if p.color == Color::White {Color::Black} else {Color::White};
                             let original_loc = Location { rank: rank as u8, file: file as u8 };
-                            let hash = zobrist.hash(&new_board);
-                            let mut score = 0.0;
-                            if table.contains_key(&hash) {
-                                let e_depth = table.get(&hash).unwrap().depth;
-                                let e_eval = table.get(&hash).unwrap().evaluation;
-                                if e_depth >= depth - 1 {
-                                    score = e_eval;
-                                } else {
-                                    score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-                                    table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-                                    depth: depth - 1, evaluation: score });
-                                }
-                            } else {
-                                score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-                                table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-                                depth: depth - 1, evaluation: score });
-                            }
+                            let new_board = board.after_move(original_loc, *move_loc);
+                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            // let hash = zobrist.hash(&new_board);
+                            // let mut score = 0.0;
+                            // if table.contains_key(&hash) {
+                            //     let e_depth = table.get(&hash).unwrap().depth;
+                            //     let e_eval = table.get(&hash).unwrap().evaluation;
+                            //     if e_depth >= depth - 1 {
+                            //         score = e_eval;
+                            //         newline = table.get(&hash).unwrap().line.clone();
+                            //     } else {
+                            //         score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //         table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //         depth: depth - 1, evaluation: score, line: line.clone() });
+                            //     }
+                            // } else {
+                            //     score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //     depth: depth - 1, evaluation: score, line: line.clone() });
+                            // }
                             if score >= beta {
                                 return beta
                             }
@@ -215,6 +213,10 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                                 for m in &newline {
                                     line.push(m.clone());
                                 }
+                                // let e_depth = table.get(&hash).unwrap().depth;
+                                // let e_eval = table.get(&hash).unwrap().evaluation;
+                                // table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                                // depth: e_depth, evaluation: e_eval, line: line.clone() });
                             }
                         }
                     }
@@ -248,10 +250,8 @@ fn quiescence(board: &Board, mut alpha: f64, beta: f64) -> f64 {
                             if let Some(other_p) = 
                                 board.board[move_loc.rank as usize][move_loc.file as usize] {
                                     if p.color != other_p.color {
-                                        let mut new_board = board.clone();
-                                        new_board.board[rank][file] = None;
-                                        new_board.board[move_loc.rank as usize][move_loc.file as usize] = Some(p);
-                                        new_board.active_color = other_p.color;
+                                        let original_loc = Location { rank: rank as u8, file: file as u8 };
+                                        let new_board = board.after_move(original_loc, *move_loc);
                                         let score = -quiescence(&new_board, -beta, -alpha);
                                         if score >= beta {
                                             return beta

@@ -26,13 +26,12 @@ pub struct Table {
     table: [[[u64; 12]; 8]; 8]
 }
 
-#[derive(Clone, Copy, Debug)]
 pub struct Entry {
     pub best_move: (Location, Location),
     pub depth: u8,
-    pub evaluation: f64
+    pub evaluation: f64,
+    pub line: Vec<String>
 }
-
 
 impl Table {
     pub fn new() -> Table {
