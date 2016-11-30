@@ -191,9 +191,20 @@ impl Board {
         let mut new_board = self.clone();
         if let Some(p) = new_board.board[start.rank as usize][start.file as usize] {
             new_board.board[start.rank as usize][start.file as usize] = None;
-            new_board.board[end.rank as usize][end.file as usize] = Some(p);
             new_board.active_color = 
                 if new_board.active_color == Color::White {Color::Black} else {Color::White};
+            new_board.board[end.rank as usize][end.file as usize] = Some(p);
+            // pawn promotion...auto promotes to queen...need to be flexable
+            // though not a high priority
+            if p.piece_type == Type::Pawn {
+                if end.rank == 7 && p.color == Color::White {
+                    new_board.board[end.rank as usize][end.file as usize] = 
+                        Some(Piece {color: Color::White, piece_type: Type::Queen});
+                } else if end.rank == 0 && p.color == Color::Black {
+                    new_board.board[end.rank as usize][end.file as usize] =
+                        Some(Piece {color: Color::Black, piece_type: Type::Queen});
+                }
+            }
         }
         new_board
     }
