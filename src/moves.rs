@@ -64,7 +64,8 @@ impl State {
 
     pub fn go(&mut self) {
         let mut depth = 1;
-        while depth < 10 {
+        let mut best_move = "".to_owned();
+        while depth < 5 {
             let mut line = Vec::new();
             let score = evaluation::pvs(&self.board, -10000.0, 10000.0, depth, 
                                         &mut line, &mut self.hashmap, &self.zobrist) * 100.0;
@@ -74,8 +75,11 @@ impl State {
                 print!("{}", m);
             }
             println!("");
+            best_move = line[0].clone();
+            best_move.push_str(&line[1].clone());
             depth += 1;
         }
+        println!("bestmove {}", best_move);
     }
 
 }

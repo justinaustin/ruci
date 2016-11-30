@@ -205,6 +205,45 @@ impl Board {
                         Some(Piece {color: Color::Black, piece_type: Type::Queen});
                 }
             }
+            // castling
+            if p.piece_type == Type::King {
+                // kingside
+                if start.file == 4 && end.file == 6 {
+                    // move rook
+                    let rook = new_board.board[end.rank as usize][7].unwrap();
+                    new_board.board[end.rank as usize][7] = None;
+                    new_board.board[end.rank as usize][5] = Some(rook);
+                } else if start.file == 4 && end.file == 2 {
+                    // queenside
+                    // move rook
+                    let rook = new_board.board[end.rank as usize][0].unwrap();
+                    new_board.board[end.rank as usize][0] = None;
+                    new_board.board[end.rank as usize][3] = Some(rook);
+                }
+                if p.color == Color::White {
+                    new_board.castling_availability.white_kingside = false;
+                    new_board.castling_availability.white_queenside = false;
+                } else {
+                    new_board.castling_availability.black_kingside = false;
+                    new_board.castling_availability.black_queenside = false;
+                }
+            }
+            // update castling availability if rook moved
+            if p.piece_type == Type::Rook {
+                if start.rank == 0 {
+                    if start.file == 7 {
+                        new_board.castling_availability.white_kingside = false;
+                    } else if start.file == 0 {
+                        new_board.castling_availability.white_queenside = false;
+                    }
+                } else if start.rank == 7 {
+                    if start.file == 7 {
+                        new_board.castling_availability.black_kingside = false;
+                    } else if start.file == 0 {
+                        new_board.castling_availability.black_queenside = false;
+                    }
+                }
+            }
         }
         new_board
     }
