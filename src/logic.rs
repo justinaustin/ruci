@@ -166,11 +166,12 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
 		if board.board[end.rank as usize][end.file as usize] == None {
 			// pawns first move can be two spaces
 			match piece.color {
+                // make sure there's no piece in the way
 				Color::White => if start.rank == 1 && end.rank == 3 {
-					return true
+					return board.board[2][end.file as usize] == None;
 				},
 				Color::Black => if start.rank == 6 && end.rank == 4 {
-					return true
+					return board.board[5][end.file as usize] == None;
 				}
 			}
 			match piece.color {
@@ -178,13 +179,14 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
 				Color::Black => return end.rank as i8 == start.rank as i8 - 1
 			}
 		}
-	} else if ((start.file as i8)- (end.file as i8)).abs() == 1 {
+	} else if ((start.file as i8) - (end.file as i8)).abs() == 1 {
 		match board.board[end.rank as usize][end.file as usize] {
 			None => {
 				// check en passant
 				match board.en_passant_square {
 					None => return false,
-					Some(location) => return end == location
+					Some(location) => return end == location && 
+                        ((start.rank as i8) - (end.rank as i8)).abs() == 1
 				}
 			},
 			Some(p) => {

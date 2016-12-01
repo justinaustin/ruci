@@ -244,6 +244,28 @@ impl Board {
                     }
                 }
             }
+            // en passant
+            if let Some(square) = new_board.en_passant_square {
+                if p.piece_type == Type::Pawn && end == square {
+                    // capture the en passant pawn
+                    if p.color == Color::White {
+                        new_board.board[end.rank as usize - 1][end.file as usize] = None;
+                    } else {
+                        new_board.board[end.rank as usize + 1][end.file as usize] = None;
+                    }
+                }
+            }
+            new_board.en_passant_square = None;
+            // update the en_passant_square if needed
+            if p.piece_type == Type::Pawn {
+                if p.color == Color::White {
+                    if end.rank - start.rank == 2 {
+                        new_board.en_passant_square = Some(Location {rank: 2, file: end.file});
+                    }
+                } else if start.rank - end.rank == 2 {
+                    new_board.en_passant_square = Some(Location {rank: 5, file: end.file});
+                }
+            }
         }
         new_board
     }
