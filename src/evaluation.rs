@@ -1,16 +1,77 @@
+use std::cell::RefMut;
+use std::collections::HashMap;
+
 use board::{Board, Location};
 use color::Color;
 use logic;
 use piece::{Piece, Type};
+use zobrist::{Entry, Table};
+
+// the following tables are taken from
+// https://chessprogramming.wikispaces.com/Simplified+evaluation+function
+static PAWN_TABLE: [[f64; 8]; 8] = [
+    [0.0,   0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,],
+    [0.5,   0.5, 0.5, 0.5, 0.5, 0.5,  0.5, 0.5,],
+    [0.1,   0.1, 0.2, 0.3, 0.3, 0.2,  0.1, 0.1,],
+    [0.05, 0.05, 0.1,0.25, 0.25,0.1, 0.05,0.05,],
+    [0.0,   0.0, 0.0, 0.2, 0.2, 0.0,  0.0, 0.0,],
+    [0.05,-0.05,-0.1, 0.0, 0.0,-0.1,-0.05,0.05,],
+    [0.05,  0.1, 0.1,-0.2,-0.2, 0.1,  0.1,0.05,],
+    [ 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,],
+];
+
+static KNIGHT_TABLE: [[f64; 8]; 8] = [
+    [-0.5,-0.4,-0.3,-0.3,-0.3,-0.3,-0.4,-0.5,],
+    [-0.4,-0.2, 0.0, 0.0, 0.0, 0.0,-0.2,-0.4,],
+    [-0.3, 0.0, 0.1,0.15,0.15, 0.1, 0.0,-0.3,],
+    [-0.3,0.05,0.15, 0.2, 0.2,0.15,0.05,-0.3,],
+    [-0.3, 0.0,0.15, 0.2, 0.2,0.15, 0.0,-0.3,],
+    [-0.3,0.05, 0.1,0.15,0.15, 0.1,0.05,-0.3,],
+    [-0.4,-0.2, 0.0,0.05,0.05, 0.0,-0.2,-0.4,],
+    [-0.5,-0.4,-0.3,-0.3,-0.3,-0.3,-0.4,-0.5,],
+];
+
+static BISHOP_TABLE: [[f64; 8]; 8] = [
+    [-0.2,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.2,],
+    [-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.1,],
+    [-0.1, 0.0,0.05, 0.1, 0.1,0.05, 0.0,-0.1,],
+    [-0.1,0.05,0.05, 0.1, 0.1,0.05,0.05,-0.1,],
+    [-0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.0,-0.1,],
+    [-0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,-0.1,],
+    [-0.1,0.05, 0.0, 0.0, 0.0, 0.0,0.05,-0.1,],
+    [-0.2,-0.1,-0.1,-0.1,-0.1,-0.1,-0.1,-0.2,],
+];
+
+static ROOK_TABLE: [[f64; 8]; 8] = [
+    [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,],
+    [ 0.05,0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [-0.05,0.0, 0.0, 0.0, 0.0, 0.0, 0.0,-0.05,],
+    [  0.0,0.0, 0.0,0.05,0.05, 0.0, 0.0,  0.0,],
+];
+
+static QUEEN_TABLE: [[f64; 8]; 8] = [
+    [ -0.2,-0.1,-0.1,-0.05,-0.05,-0.1,-0.1,-0.2,],
+    [ -0.1, 0.0, 0.0,  0.0,  0.0, 0.0, 0.0,-0.1,],
+    [ -0.1, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.1,],
+    [-0.05, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.05,],
+    [  0.0, 0.0,0.05, 0.05, 0.05,0.05, 0.0,-0.05,],
+    [ -0.1,0.05,0.05, 0.05, 0.05,0.05, 0.0,-0.1,],
+    [ -0.1, 0.0,0.05,  0.0,  0.0, 0.0, 0.0,-0.1,],
+    [ -0.2,-0.1,-0.1,-0.05,-0.05,-0.1,-0.1,-0.2,],
+];
 
 const KING_WEIGHT: f64 = 200f64;
 const QUEEN_WEIGHT: f64 = 9f64;
 const ROOK_WEIGHT: f64 = 5f64;
-const KNIGHT_WEIGHT: f64 = 3f64;
-const BISHOP_WEIGHT: f64 = 3f64;
+const KNIGHT_WEIGHT: f64 = 3.2f64;
+const BISHOP_WEIGHT: f64 = 3.3f64;
 const PAWN_WEIGHT: f64 = 1f64;
-const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
 const MOBILITY_WEIGHT: f64 = 0.1f64;
+// const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
 
 pub fn evaluate_position(board: &Board) -> f64 {
     let mut king_diff: f64 = 0.0;
@@ -20,25 +81,56 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let mut bishop_diff: f64 = 0.0;
     let mut pawn_diff: f64 = 0.0;
     let mut mobility_diff: f64 = 0.0;
+    let mut output = 0.0;
 
     for rank in 0..8 {
         for file in 0..8 {
             if let Some(p) = board.board[rank][file] {
                 match p.piece_type {
                     Type::Pawn => {
-                        pawn_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            pawn_diff += 1.0;
+                            output += PAWN_TABLE[7 - rank][file];
+                        } else {
+                            pawn_diff -= 1.0;
+                            output -= PAWN_TABLE[rank][file];
+                        }
                     },
                     Type::Bishop => {
-                        bishop_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            bishop_diff += 1.0;
+                            output += BISHOP_TABLE[7 - rank][file];
+                        } else {
+                            bishop_diff -= 1.0;
+                            output -= BISHOP_TABLE[rank][file];
+                        }
                     },
                     Type::Knight => {
-                        knight_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            knight_diff += 1.0;
+                            output += KNIGHT_TABLE[7 - rank][file];
+                        } else {
+                            knight_diff -= 1.0;
+                            output -= KNIGHT_TABLE[rank][file];
+                        }
                     },
                     Type::Rook => {
-                        rook_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            rook_diff += 1.0;
+                            output += ROOK_TABLE[7 - rank][file];
+                        } else {
+                            rook_diff -= 1.0;
+                            output -= ROOK_TABLE[rank][file];
+                        }
                     },
                     Type::Queen => {
-                        queen_diff += if p.color == Color::White { 1.0 } else { -1.0 };
+                        if p.color == Color::White {
+                            queen_diff += 1.0;
+                            output += QUEEN_TABLE[7 - rank][file];
+                        } else {
+                            queen_diff -= 1.0;
+                            output -= QUEEN_TABLE[rank][file];
+                        }
                     },
                     Type::King => {
                         king_diff += if p.color == Color::White { 1.0 } else { -1.0 };
@@ -62,9 +154,8 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let bishop_weight = BISHOP_WEIGHT * bishop_diff;
     let pawn_weight = PAWN_WEIGHT * pawn_diff;
     let mobility_weight = MOBILITY_WEIGHT * mobility_diff;
-    let mut output = 
-        king_weight + queen_weight + rook_weight + knight_weight + 
-        bishop_weight + pawn_weight + mobility_weight;
+    output += king_weight + queen_weight + rook_weight + knight_weight + 
+        bishop_weight + pawn_weight;// + mobility_weight;
     if board.active_color == Color::Black {
          output *= -1.0
     }
@@ -75,9 +166,10 @@ pub fn evaluate_position(board: &Board) -> f64 {
 /// of the given position
 ///
 /// TODO: line sometimes becomes a vector with more than depth elements...
-pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>) -> f64 {
+pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>, 
+           table: &mut HashMap<u64, Entry>, zobrist: &Table) -> f64 {
     if depth == 0 {
-        return quiescence(board, alpha, beta)
+        return evaluate_position(board)
     }
     for rank in 0..8 {
         for file in 0..8 {
@@ -88,18 +180,32 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                     for i in 0..legal_moves.len() {
                         if let Some(move_loc) = legal_moves.get(i) {
                             let mut newline = Vec::new();
-                            let mut new_board = board.clone();
-                            new_board.board[rank][file] = None;
-                            new_board.board[move_loc.rank as usize][move_loc.file as usize] = Some(p);
-                            new_board.active_color = 
-                                if p.color == Color::White {Color::Black} else {Color::White};
-                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
+                            let original_loc = Location { rank: rank as u8, file: file as u8 };
+                            let new_board = board.after_move(original_loc, *move_loc);
+                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            // let hash = zobrist.hash(&new_board);
+                            // let mut score = 0.0;
+                            // if table.contains_key(&hash) {
+                            //     let e_depth = table.get(&hash).unwrap().depth;
+                            //     let e_eval = table.get(&hash).unwrap().evaluation;
+                            //     if e_depth >= depth - 1 {
+                            //         score = e_eval;
+                            //         newline = table.get(&hash).unwrap().line.clone();
+                            //     } else {
+                            //         score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //         table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //         depth: depth - 1, evaluation: score, line: line.clone() });
+                            //     }
+                            // } else {
+                            //     score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //     depth: depth - 1, evaluation: score, line: line.clone() });
+                            // }
                             if score >= beta {
                                 return beta
                             }
                             if score > alpha {
                                 alpha = score;
-                                let original_loc = Location { rank: rank as u8, file: file as u8 };
                                 line.clear();
                                 line.push(original_loc.to_notation());
                                 line.push(move_loc.to_notation());
@@ -107,6 +213,10 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                                 for m in &newline {
                                     line.push(m.clone());
                                 }
+                                // let e_depth = table.get(&hash).unwrap().depth;
+                                // let e_eval = table.get(&hash).unwrap().evaluation;
+                                // table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                                // depth: e_depth, evaluation: e_eval, line: line.clone() });
                             }
                         }
                     }
@@ -140,10 +250,8 @@ fn quiescence(board: &Board, mut alpha: f64, beta: f64) -> f64 {
                             if let Some(other_p) = 
                                 board.board[move_loc.rank as usize][move_loc.file as usize] {
                                     if p.color != other_p.color {
-                                        let mut new_board = board.clone();
-                                        new_board.board[rank][file] = None;
-                                        new_board.board[move_loc.rank as usize][move_loc.file as usize] = Some(p);
-                                        new_board.active_color = other_p.color;
+                                        let original_loc = Location { rank: rank as u8, file: file as u8 };
+                                        let new_board = board.after_move(original_loc, *move_loc);
                                         let score = -quiescence(&new_board, -beta, -alpha);
                                         if score >= beta {
                                             return beta

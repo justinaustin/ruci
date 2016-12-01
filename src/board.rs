@@ -185,6 +185,69 @@ impl Board {
         output_board.board[rank] = new_rank;
     }
 
+    // assumes the move is legal
+    // TODO: update for castling, en passant, etc
+    pub fn after_move(&self, start: Location, end: Location) -> Board {
+        let mut new_board = self.clone();
+        if let Some(p) = new_board.board[start.rank as usize][start.file as usize] {
+            new_board.board[start.rank as usize][start.file as usize] = None;
+            new_board.active_color = 
+                if new_board.active_color == Color::White {Color::Black} else {Color::White};
+            new_board.board[end.rank as usize][end.file as usize] = Some(p);
+            // pawn promotion...auto promotes to queen...need to be flexable
+            // though not a high priority
+            if p.piece_type == Type::Pawn {
+                if end.rank == 7 && p.color == Color::White {
+                    new_board.board[end.rank as usize][end.file as usize] = 
+                        Some(Piece {color: Color::White, piece_type: Type::Queen});
+                } else if end.rank == 0 && p.color == Color::Black {
+                    new_board.board[end.rank as usize][end.file as usize] =
+                        Some(Piece {color: Color::Black, piece_type: Type::Queen});
+                }
+            }
+            // castling
+            if p.piece_type == Type::King {
+                // kingside
+                if start.file == 4 && end.file == 6 {
+                    // move rook
+                    let rook = new_board.board[end.rank as usize][7].unwrap();
+                    new_board.board[end.rank as usize][7] = None;
+                    new_board.board[end.rank as usize][5] = Some(rook);
+                } else if start.file == 4 && end.file == 2 {
+                    // queenside
+                    // move rook
+                    let rook = new_board.board[end.rank as usize][0].unwrap();
+                    new_board.board[end.rank as usize][0] = None;
+                    new_board.board[end.rank as usize][3] = Some(rook);
+                }
+                if p.color == Color::White {
+                    new_board.castling_availability.white_kingside = false;
+                    new_board.castling_availability.white_queenside = false;
+                } else {
+                    new_board.castling_availability.black_kingside = false;
+                    new_board.castling_availability.black_queenside = false;
+                }
+            }
+            // update castling availability if rook moved
+            if p.piece_type == Type::Rook {
+                if start.rank == 0 {
+                    if start.file == 7 {
+                        new_board.castling_availability.white_kingside = false;
+                    } else if start.file == 0 {
+                        new_board.castling_availability.white_queenside = false;
+                    }
+                } else if start.rank == 7 {
+                    if start.file == 7 {
+                        new_board.castling_availability.black_kingside = false;
+                    } else if start.file == 0 {
+                        new_board.castling_availability.black_queenside = false;
+                    }
+                }
+            }
+        }
+        new_board
+    }
+
     pub fn print_board(&self) {
         for rank in (0..8).rev() {
             for file in 0..8 {

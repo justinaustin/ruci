@@ -8,9 +8,14 @@ mod moves;
 mod piece;
 mod zobrist;
 
+use std::collections::HashMap;
 use std::io;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use board::Board;
+use moves::State;
+use zobrist::Table;
 
 fn readline() -> io::Result<String> {
     let mut buffer = String::new();
@@ -54,20 +59,18 @@ fn print_position(input: &Vec<&str>) {
 	}
 }
 
-fn parse_position_command(input: &Vec<&str>) {
-	// TODO
-}
-
-fn parse_go_command(input: &Vec<&str>) {
-	// TODO
+fn parse_go_command(game_state: Arc<Mutex<State>>) {
+    thread::spawn(move || {
+        game_state.lock().unwrap().go();
+    });
 }
 
 fn stop() {
-	// TODO
+    // TODO
 }
 
 fn ponder_hit() {
-	// TODO
+    // TODO
 }
 
 fn evaluate_position(input: &Vec<&str>) {
@@ -86,7 +89,10 @@ fn evaluate_position(input: &Vec<&str>) {
         s.push_str(input[7]);		
         let board = Board::from_fen(&s);
         let mut line = Vec::new();
-        println!("eval: {}", evaluation::pvs(&board, -500.0, 500.0, depth, &mut line));
+        let mut table = HashMap::new();
+        let zobrist = Table::new();
+        println!("eval: {}", evaluation::pvs(&board, -5000.0, 5000.0, depth, 
+                                             &mut line, &mut table, &zobrist));
         print!("bestmoves: ");
         for m in line {
             print!("{}", m);
@@ -113,7 +119,9 @@ fn tests() {
 }
 
 fn main() {
+    let game_state = Arc::new(Mutex::new(State::new()));
     loop {
+        let game_state = game_state.clone();
         let input = readline();
         match input {
             Err(_) => println!("error reading input"),
@@ -123,12 +131,12 @@ fn main() {
                     "uci" => uci_info(),
                     "isready" => is_ready(),
                     "ucinewgame" => uci_new_game(),
-                    "position" => parse_position_command(&tokens),
-                    "go" => parse_go_command(&tokens),
+                    "position" => game_state.lock().unwrap().update_position(&tokens),
+                    "go" => parse_go_command(game_state),
                     "stop" => stop(),
                     "ponderhit" => ponder_hit(),
                     "test" => tests(),
-                    "print" => print_position(&tokens),
+                    "print" => game_state.lock().unwrap().print_board(),
                     "eval" => evaluate_position(&tokens),
                     "quit" => break,
                     _ => println!("Unknown command: {}", tokens[0])
