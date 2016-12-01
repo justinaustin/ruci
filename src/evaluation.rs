@@ -1,5 +1,6 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
+use std::f64;
 
 use board::{Board, Location};
 use color::Color;
@@ -156,6 +157,12 @@ pub fn evaluate_position(board: &Board) -> f64 {
     let mobility_weight = MOBILITY_WEIGHT * mobility_diff;
     output += king_weight + queen_weight + rook_weight + knight_weight + 
         bishop_weight + pawn_weight;// + mobility_weight;
+    // if there is no king, then return the worst possible score (for mate)
+    if king_diff > 0.0 {
+        output = f64::INFINITY;
+    } else if king_diff < 0.0 {
+        output = f64::NEG_INFINITY;
+    }
     if board.active_color == Color::Black {
          output *= -1.0
     }
@@ -164,8 +171,6 @@ pub fn evaluate_position(board: &Board) -> f64 {
 
 /// uses principle variation search to return the minimax
 /// of the given position
-///
-/// TODO: line sometimes becomes a vector with more than depth elements...
 pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>, 
            table: &mut HashMap<u64, Entry>, zobrist: &Table) -> f64 {
     if depth == 0 {
@@ -201,6 +206,29 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                             //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
                             //     depth: depth - 1, evaluation: score, line: line.clone() });
                             // }
+                            
+                            // for checkmate
+                            if score.is_infinite() {
+                                if board.active_color == Color::White && score > 0.0 {
+                                    line.clear();
+                                    line.push(original_loc.to_notation());
+                                    line.push(move_loc.to_notation());
+                                    line.push(" ".to_owned());
+                                    for m in &newline {
+                                        line.push(m.clone());
+                                    }
+                                    return score;
+                                } else if board.active_color == Color::Black && score > 0.0 {
+                                    line.clear();
+                                    line.push(original_loc.to_notation());
+                                    line.push(move_loc.to_notation());
+                                    line.push(" ".to_owned());
+                                    for m in &newline {
+                                        line.push(m.clone());
+                                    }
+                                    return score;
+                                }
+                            }
                             if score >= beta {
                                 return beta
                             }
