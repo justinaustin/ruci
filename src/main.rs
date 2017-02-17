@@ -1,5 +1,6 @@
 extern crate rand;
 
+mod bitboard;
 mod board;
 mod color;
 mod evaluation;
