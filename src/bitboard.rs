@@ -23,6 +23,9 @@ pub struct Bitboard {
     black_king: u64
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct EntireBitboard(u64);
+
 impl Bitboard {
 
     /// Returns an empty Bitboard
@@ -107,55 +110,72 @@ impl Bitboard {
     ///
     /// Assumes there is a piece at the start position and that
     /// the move is legal
-    pub fn after_move(bitboard: &mut Bitboard, start_loc: Location, end_loc: Location) {
+    pub fn after_move(&mut self, start_loc: Location, end_loc: Location) {
         let start = Bitboard::one_hot_square(start_loc);
         let end = Bitboard::one_hot_square(end_loc);
 
         // find what piece is at the start location then AND it out
         // and OR it into end location
-        if bitboard.white_pawns & start != 0 {
-            bitboard.white_pawns &= !start;
-            bitboard.white_pawns |= end;
-        } else if bitboard.black_pawns & start != 0 {
-            bitboard.black_pawns &= !start;
-            bitboard.black_pawns |= end;
-        } else if bitboard.white_knights & start != 0 {
-            bitboard.white_knights &= !start;
-            bitboard.white_knights |= end;
-        } else if bitboard.black_knights & start != 0 {
-            bitboard.black_knights &= !start;
-            bitboard.black_knights |= end;
-        } else if bitboard.white_bishops & start != 0 {
-            bitboard.white_bishops &= !start;
-            bitboard.white_bishops |= end;
-        } else if bitboard.black_bishops & start != 0 {
-            bitboard.black_bishops &= !start;
-            bitboard.black_bishops |= end;
-        } else if bitboard.white_rooks & start != 0 {
-            bitboard.white_rooks &= !start;
-            bitboard.white_rooks |= end;
-        } else if bitboard.black_rooks & start != 0 {
-            bitboard.black_rooks &= !start;
-            bitboard.black_rooks |= end;
-        } else if bitboard.white_queens & start != 0 {
-            bitboard.white_queens &= !start;
-            bitboard.white_queens |= end;
-        } else if bitboard.black_queens & start != 0 {
-            bitboard.black_queens &= !start;
-            bitboard.black_queens |= end;
-        } else if bitboard.white_king & start != 0 {
-            bitboard.white_king &= !start;
-            bitboard.white_king |= end;
-        } else if bitboard.black_king & start != 0 {
-            bitboard.black_king &= !start;
-            bitboard.black_king |= end;
+        if self.white_pawns & start != 0 {
+            self.white_pawns &= !start;
+            self.white_pawns |= end;
+        } else if self.black_pawns & start != 0 {
+            self.black_pawns &= !start;
+            self.black_pawns |= end;
+        } else if self.white_knights & start != 0 {
+            self.white_knights &= !start;
+            self.white_knights |= end;
+        } else if self.black_knights & start != 0 {
+            self.black_knights &= !start;
+            self.black_knights |= end;
+        } else if self.white_bishops & start != 0 {
+            self.white_bishops &= !start;
+            self.white_bishops |= end;
+        } else if self.black_bishops & start != 0 {
+            self.black_bishops &= !start;
+            self.black_bishops |= end;
+        } else if self.white_rooks & start != 0 {
+            self.white_rooks &= !start;
+            self.white_rooks |= end;
+        } else if self.black_rooks & start != 0 {
+            self.black_rooks &= !start;
+            self.black_rooks |= end;
+        } else if self.white_queens & start != 0 {
+            self.white_queens &= !start;
+            self.white_queens |= end;
+        } else if self.black_queens & start != 0 {
+            self.black_queens &= !start;
+            self.black_queens |= end;
+        } else if self.white_king & start != 0 {
+            self.white_king &= !start;
+            self.white_king |= end;
+        } else if self.black_king & start != 0 {
+            self.black_king &= !start;
+            self.black_king |= end;
         }
+    }
+
+    pub fn get_entire_board(&self) -> EntireBitboard {
+        let mut board = self.white_pawns;
+        board |= self.black_pawns;
+        board |= self.white_knights;
+        board |= self.black_knights;
+        board |= self.white_bishops;
+        board |= self.black_bishops;
+        board |= self.white_rooks;
+        board |= self.black_rooks;
+        board |= self.white_queens;
+        board |= self.black_queens;
+        board |= self.white_king;
+        board |= self.black_king;
+        EntireBitboard(board)
     }
 }
 
 #[cfg(test)]
 mod test {
     use bitboard::Bitboard;
+    use bitboard::EntireBitboard;
     use board::Location;
 
     #[test]
@@ -237,7 +257,23 @@ mod test {
         let mut bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
         let start = Location { rank: 1, file: 4};
         let end = Location { rank: 3, file: 4};
-        Bitboard::after_move(&mut bitboard, start, end);
+        bitboard.after_move(start, end);
         assert_eq!(control, bitboard);
+    }
+
+    #[test]
+    fn test_entire_board_beginning() {
+        let control = EntireBitboard(0xFFFF00000000FFFF);
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+        let entire = bitboard.get_entire_board();
+        assert_eq!(control, entire);
+    }
+
+    #[test]
+    fn test_entire_board_two_kings() {
+        let control = EntireBitboard(0x100008000000);
+        let bitboard = Bitboard::from_fen("8/8/4k3/8/3K4/8/8/8 w - - 3 31").unwrap();
+        let entire = bitboard.get_entire_board();
+        assert_eq!(control, entire);
     }
 }
