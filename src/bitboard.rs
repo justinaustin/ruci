@@ -170,6 +170,65 @@ impl Bitboard {
         board |= self.black_king;
         EntireBitboard(board)
     }
+
+    /// checks if there are any pawns to promote and
+    /// replaces them with queens (needs to be more flexable)
+    pub fn promote_pawns(&mut self) {
+        let promoted_white_pawns = self.white_pawns >> 56;
+        let promoted_black_pawns = self.black_pawns & 0x00000000000000FF;
+        if promoted_white_pawns != 0 {
+            self.white_queens |= promoted_white_pawns;
+            self.white_pawns &= 0x00FFFFFFFFFFFFFF;
+        }
+        if promoted_black_pawns != 0 {
+            self.black_queens |= promoted_black_pawns;
+            self.black_pawns &= 0xFFFFFFFFFFFFFF00;
+        }
+    }
+
+    /// returns if the previous move was a kingside castle
+    /// and if it was, moves the rook to the appropriate place
+    pub fn check_kingside_castle(&mut self, old_board: &Bitboard, is_white: bool) -> bool {
+        if is_white && old_board.white_king == 0x10 && self.white_king == 0x40 {
+            self.white_rooks &= 0xFFFFFFFFFFFFFF7F;
+            self.white_rooks |= 0x20;
+            return true
+        } else if !is_white && old_board.black_king == 0x1000000000000000 && self.black_king == 0x4000000000000000 {
+            self.black_rooks &= 0x7FFFFFFFFFFFFFFF;
+            self.black_rooks |= 0x2000000000000000;
+            return true
+        }
+        false
+    }
+
+    /// returns if the previous move was a queenside castle
+    /// and if it was, moves the rook to the appropriate place
+    pub fn check_queenside_castle(&mut self, old_board: &Bitboard, is_white: bool) -> bool {
+        if is_white && old_board.white_king == 0x10 && self.white_king == 0x4 {
+            self.white_rooks &= 0xFFFFFFFFFFFFFFFE;
+            self.white_rooks |= 0x8;
+            return true
+        } else if !is_white && old_board.black_king == 0x1000000000000000 && self.black_king == 0x400000000000000 {
+            self.black_rooks &= 0xFEFFFFFFFFFFFFFF;
+            self.black_rooks |= 0x800000000000000;
+            return true
+        }
+        false
+    }
+
+    /// returns if the previous move was a kingside rook move such that
+    /// castling kingside is no longer available
+    pub fn check_rook_move_castling_kingside(&self, is_white: bool) -> bool {
+        (is_white && self.white_rooks & 0x80 == 0) ||
+        (!is_white && self.black_rooks & 0x8000000000000000 == 0)
+    }
+
+    /// returns if the previous move was a queenside rook move such that
+    /// castling queenside is no longer available
+    pub fn check_rook_move_castling_queenside(&self, is_white: bool) -> bool {
+        (is_white && self.white_rooks & 0x1 == 0) ||
+        (!is_white && self.black_rooks & 0x100000000000000 == 0)
+    }
 }
 
 #[cfg(test)]

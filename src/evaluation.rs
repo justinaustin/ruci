@@ -3,13 +3,15 @@ use std::collections::HashMap;
 use std::f64;
 
 use board::{Board, Location};
+use bitboard::Bitboard;
 use color::Color;
 use logic;
 use piece::{Piece, Type};
-use zobrist::{Entry, Table};
 
 // the following tables are taken from
 // https://chessprogramming.wikispaces.com/Simplified+evaluation+function
+//
+// TODO: change all floats to ints (x100)
 static PAWN_TABLE: [[f64; 8]; 8] = [
     [0.0,   0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0,],
     [0.5,   0.5, 0.5, 0.5, 0.5, 0.5,  0.5, 0.5,],
@@ -73,6 +75,12 @@ const BISHOP_WEIGHT: f64 = 3.3f64;
 const PAWN_WEIGHT: f64 = 1f64;
 const MOBILITY_WEIGHT: f64 = 0.1f64;
 // const BAD_PAWN_STRUCT_WEIGHT: f64 = -0.5f64;
+
+impl Bitboard {
+    pub fn evaluate_position(&self) -> f64 {
+        // TODO
+    }
+}
 
 pub fn evaluate_position(board: &Board) -> f64 {
     let mut king_diff: f64 = 0.0;
@@ -171,8 +179,7 @@ pub fn evaluate_position(board: &Board) -> f64 {
 
 /// uses principle variation search to return the minimax
 /// of the given position
-pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>, 
-           table: &mut HashMap<u64, Entry>, zobrist: &Table) -> f64 {
+pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>) -> f64 {
     if depth == 0 {
         return evaluate_position(board)
     }
@@ -187,7 +194,7 @@ pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<S
                             let mut newline = Vec::new();
                             let original_loc = Location { rank: rank as u8, file: file as u8 };
                             let new_board = board.after_move(original_loc, *move_loc);
-                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
                             // let hash = zobrist.hash(&new_board);
                             // let mut score = 0.0;
                             // if table.contains_key(&hash) {

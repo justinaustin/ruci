@@ -1,3 +1,4 @@
+use bitboard::Bitboard;
 use piece::{Piece, Type};
 use color::Color;
 use std::char;
@@ -66,7 +67,7 @@ pub struct CastlingAvailability {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Board {
-    pub board: [[Option<Piece>; 8]; 8],
+    pub board: Bitboard,
     pub active_color: Color,
     pub castling_availability: CastlingAvailability,
     pub en_passant_square: Option<Location>,
@@ -77,16 +78,8 @@ pub struct Board {
 impl Board {
     pub fn from_fen(fen: &str) -> Board {
         let mut output_board = Board {
-            board: [
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-                [None; 8],
-            ],
+            // this will panic if the fen is not well formed
+            board: Bitboard::from_fen(fen).unwrap(),
             active_color: Color::White,
             castling_availability: CastlingAvailability {
                 white_kingside: false,
@@ -110,12 +103,6 @@ impl Board {
         let en_passant_target_square = split_fen[3];
         let halfmove_clock = split_fen[4];
         let fullmove_number = split_fen[5];
-
-        let ranks = piece_placement.split("/").collect::<Vec<_>>();
-        for i in 0..ranks.len() {
-            let rank = ranks[i];
-            Board::parse_rank(&mut output_board, rank, 7 - i);
-        }
 
         if active_color == "b" {
            output_board.active_color = Color::Black;
@@ -151,122 +138,63 @@ impl Board {
         output_board
     }
 
-    fn parse_rank(output_board: &mut Board, rank_str: &str, rank: usize) {
-        let rank_string = String::from(rank_str);
-        let chars = rank_string.chars();
-        let mut new_rank: [Option<Piece>; 8] = [None; 8];
-        let mut index = 0;
-        for ch in chars {
-            match ch {
-                // convert ascii into number
-                '1'...'8' => index += ch as usize - 49,
-
-                'r' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::Rook}),
-                'R' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::Rook}),
-
-                'n' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::Knight}),
-                'N' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::Knight}),
-
-                'b' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::Bishop}),
-                'B' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::Bishop}),
-
-                'q' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::Queen}),
-                'Q' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::Queen}),
-
-                'k' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::King}),
-                'K' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::King}),
-
-                'p' => new_rank[index] = Some(Piece {color: Color::Black, piece_type: Type::Pawn}),
-                'P' => new_rank[index] = Some(Piece {color: Color::White, piece_type: Type::Pawn}),
-                _ => panic!("parse_rank")
-            };
-            index += 1;
-        }
-        output_board.board[rank] = new_rank;
-    }
-
     // assumes the move is legal
     // TODO: update for castling, en passant, etc
     pub fn after_move(&self, start: Location, end: Location) -> Board {
         let mut new_board = self.clone();
-        if let Some(p) = new_board.board[start.rank as usize][start.file as usize] {
-            new_board.board[start.rank as usize][start.file as usize] = None;
-            new_board.active_color = 
-                if new_board.active_color == Color::White {Color::Black} else {Color::White};
-            new_board.board[end.rank as usize][end.file as usize] = Some(p);
-            // pawn promotion...auto promotes to queen...need to be flexable
-            // though not a high priority
-            if p.piece_type == Type::Pawn {
-                if end.rank == 7 && p.color == Color::White {
-                    new_board.board[end.rank as usize][end.file as usize] = 
-                        Some(Piece {color: Color::White, piece_type: Type::Queen});
-                } else if end.rank == 0 && p.color == Color::Black {
-                    new_board.board[end.rank as usize][end.file as usize] =
-                        Some(Piece {color: Color::Black, piece_type: Type::Queen});
-                }
+        new_board.board.after_move(start, end);
+        new_board.active_color =
+            if new_board.active_color == Color::White {Color::Black} else {Color::White};
+        // pawn promotion
+        new_board.board.promote_pawns();
+        // castling
+        if new_board.board.check_kingside_castle(&self.board, self.active_color == Color::White) ||
+            new_board.board.check_queenside_castle(&self.board, self.active_color== Color::White) {
+            if self.active_color == Color::White {
+                new_board.castling_availability.white_kingside = false;
+                new_board.castling_availability.white_queenside = false;
+            } else {
+                new_board.castling_availability.black_kingside = false;
+                new_board.castling_availability.black_queenside = false;
             }
-            // castling
-            if p.piece_type == Type::King {
-                // kingside
-                if start.file == 4 && end.file == 6 {
-                    // move rook
-                    let rook = new_board.board[end.rank as usize][7].unwrap();
-                    new_board.board[end.rank as usize][7] = None;
-                    new_board.board[end.rank as usize][5] = Some(rook);
-                } else if start.file == 4 && end.file == 2 {
-                    // queenside
-                    // move rook
-                    let rook = new_board.board[end.rank as usize][0].unwrap();
-                    new_board.board[end.rank as usize][0] = None;
-                    new_board.board[end.rank as usize][3] = Some(rook);
-                }
-                if p.color == Color::White {
-                    new_board.castling_availability.white_kingside = false;
-                    new_board.castling_availability.white_queenside = false;
-                } else {
-                    new_board.castling_availability.black_kingside = false;
-                    new_board.castling_availability.black_queenside = false;
-                }
-            }
-            // update castling availability if rook moved
-            if p.piece_type == Type::Rook {
-                if start.rank == 0 {
-                    if start.file == 7 {
-                        new_board.castling_availability.white_kingside = false;
-                    } else if start.file == 0 {
-                        new_board.castling_availability.white_queenside = false;
-                    }
-                } else if start.rank == 7 {
-                    if start.file == 7 {
-                        new_board.castling_availability.black_kingside = false;
-                    } else if start.file == 0 {
-                        new_board.castling_availability.black_queenside = false;
-                    }
-                }
-            }
-            // en passant
-            if let Some(square) = new_board.en_passant_square {
-                if p.piece_type == Type::Pawn && end == square {
-                    // capture the en passant pawn
-                    if p.color == Color::White {
-                        new_board.board[end.rank as usize - 1][end.file as usize] = None;
-                    } else {
-                        new_board.board[end.rank as usize + 1][end.file as usize] = None;
-                    }
-                }
-            }
-            new_board.en_passant_square = None;
-            // update the en_passant_square if needed
-            if p.piece_type == Type::Pawn {
-                if p.color == Color::White {
-                    if end.rank - start.rank == 2 {
-                        new_board.en_passant_square = Some(Location {rank: 2, file: end.file});
-                    }
-                } else if start.rank - end.rank == 2 {
-                    new_board.en_passant_square = Some(Location {rank: 5, file: end.file});
-                }
-            }
+        } 
+        // update castling availability if rook moved
+        if new_board.board.check_rook_move_castling_kingside(true) {
+            new_board.castling_availability.white_kingside = false;
+        } else if new_board.board.check_rook_move_castling_kingside(false) {
+            new_board.castling_availability.black_kingside = false;
+        } else if new_board.board.check_rook_move_castling_queenside(true) {
+            new_board.castling_availability.white_queenside = false;
+        } else if new_board.board.check_rook_move_castling_queenside(false) {
+            new_board.castling_availability.black_queenside = false;
         }
+
+        // TODO:en passant
+        
+
+//             // en passant
+//             if let Some(square) = new_board.en_passant_square {
+//                 if p.piece_type == Type::Pawn && end == square {
+//                     // capture the en passant pawn
+//                     if p.color == Color::White {
+//                         new_board.board[end.rank as usize - 1][end.file as usize] = None;
+//                     } else {
+//                         new_board.board[end.rank as usize + 1][end.file as usize] = None;
+//                     }
+//                 }
+//             }
+//             new_board.en_passant_square = None;
+//             // update the en_passant_square if needed
+//             if p.piece_type == Type::Pawn {
+//                 if p.color == Color::White {
+//                     if end.rank - start.rank == 2 {
+//                         new_board.en_passant_square = Some(Location {rank: 2, file: end.file});
+//                     }
+//                 } else if start.rank - end.rank == 2 {
+//                     new_board.en_passant_square = Some(Location {rank: 5, file: end.file});
+//                 }
+//             }
+//         }
         new_board
     }
 

@@ -3,7 +3,6 @@ use std::f64;
 
 use board::{Board, Location};
 use evaluation;
-use zobrist::{Entry, Table};
 
 pub struct State {
     pub board: Board,

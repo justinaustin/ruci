@@ -7,7 +7,6 @@ mod evaluation;
 mod logic;
 mod moves;
 mod piece;
-mod zobrist;
 
 use std::collections::HashMap;
 use std::io;
@@ -16,7 +15,6 @@ use std::thread;
 
 use board::Board;
 use moves::State;
-use zobrist::Table;
 
 fn readline() -> io::Result<String> {
     let mut buffer = String::new();
