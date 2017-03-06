@@ -7,7 +7,6 @@ use evaluation;
 pub struct State {
     pub board: Board,
     pub hashmap: HashMap<u64, Entry>,
-    pub zobrist: Table,
 }
 
 impl State {

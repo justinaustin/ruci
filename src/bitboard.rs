@@ -23,9 +23,6 @@ pub struct Bitboard {
     pub black_king: u64
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct EntireBitboard(u64);
-
 impl Bitboard {
 
     /// Returns an empty Bitboard
@@ -155,7 +152,7 @@ impl Bitboard {
         }
     }
 
-    pub fn get_entire_board(&self) -> EntireBitboard {
+    pub fn get_entire_board(&self) -> u64 {
         let mut board = self.white_pawns;
         board |= self.black_pawns;
         board |= self.white_knights;
@@ -168,7 +165,27 @@ impl Bitboard {
         board |= self.black_queens;
         board |= self.white_king;
         board |= self.black_king;
-        EntireBitboard(board)
+        board
+    }
+
+    pub fn get_white_pieces(&self) -> u64 {
+        let mut board = self.white_pawns;
+        board |= self.white_knights;
+        board |= self.white_bishops;
+        board |= self.white_rooks;
+        board |= self.white_queens;
+        board |= self.white_king;
+        board
+    }
+
+    pub fn get_black_pieces(&self) -> u64 {
+        let mut board = self.black_pawns;
+        board |= self.black_knights;
+        board |= self.black_bishops;
+        board |= self.black_rooks;
+        board |= self.black_queens;
+        board |= self.black_king;
+        board
     }
 
     /// checks if there are any pawns to promote and

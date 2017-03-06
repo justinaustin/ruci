@@ -4,16 +4,18 @@
 use bitboard::Bitboard;
 use board::Location;
 
-static mut pawn_t_white: [u64; 64] = [0; 64];
-static mut pawn_t_black: [u64; 64] = [0; 64];
-static mut knight_t: [u64; 64] = [0; 64];
-static mut bishop_t: [u64; 64] = [0; 64];
-static mut rook_t: [u64; 64] = [0; 64];
-static mut queen_t: [u64; 64] = [0; 64];
-static mut king_t: [u64; 64] = [0; 64];
+pub static mut pawn_t_white: [u64; 64] = [0; 64];
+pub static mut pawn_t_black: [u64; 64] = [0; 64];
+pub static mut pawn_capture_t_white: [u64; 64] = [0; 64];
+pub static mut pawn_capture_t_black: [u64; 64] = [0; 64];
+pub static mut knight_t: [u64; 64] = [0; 64];
+pub static mut bishop_t: [u64; 64] = [0; 64];
+pub static mut rook_t: [u64; 64] = [0; 64];
+pub static mut queen_t: [u64; 64] = [0; 64];
+pub static mut king_t: [u64; 64] = [0; 64];
 
 /// Returns the index of a rank and file
-fn index(rank: u8, file: u8) -> usize {
+pub fn index(rank: u8, file: u8) -> usize {
     (rank as usize) * 8 + (file as usize)
 }
 
@@ -23,9 +25,10 @@ pub fn init() {
     for rank in 0..8 {
         for file in 0..8 {
             let index = index(rank, file);
-
             pawn_t_white[index] = get_pawn_moves(rank, file, true);
             pawn_t_black[index] = get_pawn_moves(rank, file, false);
+            pawn_capture_t_white[index] = get_pawn_captures(rank, file, true);
+            pawn_capture_t_black[index] = get_pawn_captures(rank, file, false);
             knight_t[index] = get_knight_moves(rank, file);
             bishop_t[index] = get_bishop_moves(rank, file);
             rook_t[index] = get_rook_moves(rank, file);
@@ -62,6 +65,36 @@ fn get_pawn_moves(rank: u8, file: u8, isWhite: bool) -> u64 {
         }
         let one_up = Bitboard::one_hot_square(Location {rank: rank - 1, file: file});
         output |= one_up;
+    }
+    output
+}
+
+/// Returns a u64 representing all pseudo legal moves of a pawn
+/// from the input location
+fn get_pawn_captures(rank: u8, file: u8, isWhite: bool) -> u64 {
+    let mut output = 0;
+    if isWhite {
+        if rank == 7 {
+            return output;
+        } else {
+            if file > 0 {
+                output |= Bitboard::one_hot_square(Location {rank: rank + 1, file: file - 1});
+            }
+            if file < 7 {
+                output |= Bitboard::one_hot_square(Location {rank: rank + 1, file: file + 1});
+            }
+        }
+    } else {
+        if rank == 0 {
+            return output;
+        } else {
+            if file > 0 {
+                output |= Bitboard::one_hot_square(Location {rank: rank - 1, file: file - 1});
+            }
+            if file < 7 {
+                output |= Bitboard::one_hot_square(Location {rank: rank - 1, file: file + 1});
+            }
+        }
     }
     output
 }

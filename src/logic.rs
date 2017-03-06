@@ -1,8 +1,30 @@
+use bitboard::Bitboard;
 use board::{Board, Location};
 use piece::{Piece, Type};
 use color::Color;
+use table;
 
 // TODO: pawn promotion
+
+/// Returns true iff the move is a pseudo legal move
+fn is_pseudo_legal_move(board: &Board, start: Location, end: Location) -> bool {
+    let white_board = board.board.get_white_pieces();
+    let black_board = board.board.get_black_pieces();
+    let start_one_hot = Bitboard::one_hot_square(start);
+    let end_one_hot = Bitboard::one_hot_square(end);
+    // check if the correct color piece is at the start location
+    if board.active_color == Color::White && white_board & start_one_hot == 0 {
+        return false
+    } else if board.active_color == Color::Black && black_board & start_one_hot == 0 {
+        return false
+    }
+    if board.board.white_pawns & start_one_hot != 0 {
+        // TODO: capture OR regular move
+        let moves = Table::pawn_t_white[Table::index(start.rank, start.file)];
+        let captures = Table::pawn_capture_t_white[Table::index(start.rank, start.file)];
+    } 
+    false
+}
 
 pub fn is_valid_move_string(board: &Board, chess_move: &str) -> bool {
 	let start_pos: String = chess_move.chars().take(2).collect();
