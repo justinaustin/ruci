@@ -40,7 +40,10 @@ impl State {
             self.board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         }
         // skip in input until just after the word 'moves'
-        let index = input.iter().position(|&r| r == "moves").unwrap_or(input.len());
+        let index = input
+            .iter()
+            .position(|&r| r == "moves")
+            .unwrap_or(input.len());
         for i in (index + 1)..input.len() {
             let m = input[i];
             let mut start = "".to_owned();
@@ -66,10 +69,18 @@ impl State {
         let mut best_move = "".to_owned();
         while depth < 5 {
             let mut line = Vec::new();
-            let score = evaluation::pvs(&self.board, f64::NEG_INFINITY, f64::INFINITY, depth, 
-                                        &mut line, &mut self.hashmap, &self.zobrist) * 100.0;
-            print!("info depth {} score cp {:.0} nodes {} time {} pv ", 
-                     depth, score, "1", "1");
+            let score = evaluation::pvs(&self.board,
+                                        f64::NEG_INFINITY,
+                                        f64::INFINITY,
+                                        depth,
+                                        &mut line,
+                                        &mut self.hashmap,
+                                        &self.zobrist) * 100.0;
+            print!("info depth {} score cp {:.0} nodes {} time {} pv ",
+                   depth,
+                   score,
+                   "1",
+                   "1");
             for m in &line {
                 print!("{}", m);
             }
@@ -83,5 +94,4 @@ impl State {
         }
         println!("bestmove {}", best_move);
     }
-
 }

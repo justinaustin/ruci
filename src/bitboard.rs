@@ -20,11 +20,10 @@ pub struct Bitboard {
     pub black_bishops: u64,
     pub black_rooks: u64,
     pub black_queens: u64,
-    pub black_king: u64
+    pub black_king: u64,
 }
 
 impl Bitboard {
-
     /// Returns an empty Bitboard
     pub fn empty() -> Bitboard {
         Bitboard {
@@ -39,7 +38,7 @@ impl Bitboard {
             black_bishops: 0,
             black_rooks: 0,
             black_queens: 0,
-            black_king: 0
+            black_king: 0,
         }
     }
 
@@ -50,7 +49,7 @@ impl Bitboard {
     }
 
     /// Returns Some of a Bitboard representation of the input
-    /// FEN string, or None if the FEN string is invalid. 
+    /// FEN string, or None if the FEN string is invalid.
     ///
     /// The Bitboard only represents the pieces and their positions.
     /// It does not deal with castling rights, move count, etc. These
@@ -59,7 +58,7 @@ impl Bitboard {
         let mut output = Bitboard::empty();
         let split_fen = fen.split_whitespace().collect::<Vec<_>>();
         if split_fen.len() != 6 {
-            return None
+            return None;
         }
         let ranks = split_fen[0].split("/").collect::<Vec<_>>();
         for i in 0..ranks.len() {
@@ -69,8 +68,11 @@ impl Bitboard {
             for ch in chars {
                 // 64 bit one hot integer where the bit representing the current
                 // square is 1
-                let current_location = Location { rank: 7 - i as u8, file: index as u8 };
-                let current_square: u64  = Bitboard::one_hot_square(current_location);
+                let current_location = Location {
+                    rank: 7 - i as u8,
+                    file: index as u8,
+                };
+                let current_square: u64 = Bitboard::one_hot_square(current_location);
                 match ch {
                     // convert ascii to number
                     // this represents a number of consecutive empty squares
@@ -94,7 +96,7 @@ impl Bitboard {
                     'p' => output.black_pawns |= current_square,
                     'P' => output.white_pawns |= current_square,
 
-                    _ => return None
+                    _ => return None,
                 }
                 index += 1;
             }
@@ -209,11 +211,12 @@ impl Bitboard {
         if is_white && old_board.white_king == 0x10 && self.white_king == 0x40 {
             self.white_rooks &= 0xFFFFFFFFFFFFFF7F;
             self.white_rooks |= 0x20;
-            return true
-        } else if !is_white && old_board.black_king == 0x1000000000000000 && self.black_king == 0x4000000000000000 {
+            return true;
+        } else if !is_white && old_board.black_king == 0x1000000000000000 &&
+                  self.black_king == 0x4000000000000000 {
             self.black_rooks &= 0x7FFFFFFFFFFFFFFF;
             self.black_rooks |= 0x2000000000000000;
-            return true
+            return true;
         }
         false
     }
@@ -224,11 +227,12 @@ impl Bitboard {
         if is_white && old_board.white_king == 0x10 && self.white_king == 0x4 {
             self.white_rooks &= 0xFFFFFFFFFFFFFFFE;
             self.white_rooks |= 0x8;
-            return true
-        } else if !is_white && old_board.black_king == 0x1000000000000000 && self.black_king == 0x400000000000000 {
+            return true;
+        } else if !is_white && old_board.black_king == 0x1000000000000000 &&
+                  self.black_king == 0x400000000000000 {
             self.black_rooks &= 0xFEFFFFFFFFFFFFFF;
             self.black_rooks |= 0x800000000000000;
-            return true
+            return true;
         }
         false
     }
@@ -268,7 +272,7 @@ mod test {
             black_bishops: 0,
             black_rooks: 0,
             black_queens: 0,
-            black_king: 0
+            black_king: 0,
         };
         let bitboard = Bitboard::empty();
         assert_eq!(control, bitboard);
@@ -288,9 +292,10 @@ mod test {
             black_bishops: 0x2400000000000000,
             black_rooks: 0x8100000000000000,
             black_queens: 0x800000000000000,
-            black_king: 0x1000000000000000
+            black_king: 0x1000000000000000,
         };
-        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
         assert_eq!(control, bitboard);
     }
 
@@ -308,9 +313,10 @@ mod test {
             black_bishops: 0x400000000000000,
             black_rooks: 0x2100000000000000,
             black_queens: 0x4000000000000,
-            black_king: 0x4000000000000000
+            black_king: 0x4000000000000000,
         };
-        let bitboard = Bitboard::from_fen("rnb2rk1/2qpNNpp/p4p2/2p5/4Pp2/1B1P4/PPP2PPP/R2Q1RK1 b - - 0 2").unwrap();
+        let bitboard = Bitboard::from_fen("rnb2rk1/2qpNNpp/p4p2/2p5/4Pp2/1B1P4/PPP2PPP/R2Q1RK1 b - - 0 2")
+            .unwrap();
         assert_eq!(control, bitboard);
     }
 
@@ -328,11 +334,12 @@ mod test {
             black_bishops: 0x2400000000000000,
             black_rooks: 0x8100000000000000,
             black_queens: 0x800000000000000,
-            black_king: 0x1000000000000000
+            black_king: 0x1000000000000000,
         };
-        let mut bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
-        let start = Location { rank: 1, file: 4};
-        let end = Location { rank: 3, file: 4};
+        let mut bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
+        let start = Location { rank: 1, file: 4 };
+        let end = Location { rank: 3, file: 4 };
         bitboard.after_move(start, end);
         assert_eq!(control, bitboard);
     }
@@ -340,7 +347,8 @@ mod test {
     #[test]
     fn test_entire_board_beginning() {
         let control = EntireBitboard(0xFFFF00000000FFFF);
-        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").unwrap();
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
         let entire = bitboard.get_entire_board();
         assert_eq!(control, entire);
     }

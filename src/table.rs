@@ -51,19 +51,31 @@ fn get_pawn_moves(rank: u8, file: u8, isWhite: bool) -> u64 {
         if rank == 7 {
             return output;
         } else if rank == 2 {
-            let two_up = Bitboard::one_hot_square(Location {rank: rank + 2, file: file});
+            let two_up = Bitboard::one_hot_square(Location {
+                                                      rank: rank + 2,
+                                                      file: file,
+                                                  });
             output |= two_up;
         }
-        let one_up = Bitboard::one_hot_square(Location {rank: rank + 1, file: file});
+        let one_up = Bitboard::one_hot_square(Location {
+                                                  rank: rank + 1,
+                                                  file: file,
+                                              });
         output |= one_up;
     } else {
         if rank == 0 {
             return output;
         } else if rank == 5 {
-            let two_up = Bitboard::one_hot_square(Location {rank: rank - 2, file: file});
+            let two_up = Bitboard::one_hot_square(Location {
+                                                      rank: rank - 2,
+                                                      file: file,
+                                                  });
             output |= two_up;
         }
-        let one_up = Bitboard::one_hot_square(Location {rank: rank - 1, file: file});
+        let one_up = Bitboard::one_hot_square(Location {
+                                                  rank: rank - 1,
+                                                  file: file,
+                                              });
         output |= one_up;
     }
     output
@@ -78,10 +90,16 @@ fn get_pawn_captures(rank: u8, file: u8, isWhite: bool) -> u64 {
             return output;
         } else {
             if file > 0 {
-                output |= Bitboard::one_hot_square(Location {rank: rank + 1, file: file - 1});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: rank + 1,
+                                                       file: file - 1,
+                                                   });
             }
             if file < 7 {
-                output |= Bitboard::one_hot_square(Location {rank: rank + 1, file: file + 1});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: rank + 1,
+                                                       file: file + 1,
+                                                   });
             }
         }
     } else {
@@ -89,10 +107,16 @@ fn get_pawn_captures(rank: u8, file: u8, isWhite: bool) -> u64 {
             return output;
         } else {
             if file > 0 {
-                output |= Bitboard::one_hot_square(Location {rank: rank - 1, file: file - 1});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: rank - 1,
+                                                       file: file - 1,
+                                                   });
             }
             if file < 7 {
-                output |= Bitboard::one_hot_square(Location {rank: rank - 1, file: file + 1});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: rank - 1,
+                                                       file: file + 1,
+                                                   });
             }
         }
     }
@@ -106,42 +130,66 @@ fn get_knight_moves(rank: u8, file: u8) -> u64 {
     let mut n_rank = rank + 1;
     let mut n_file = file - 2;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank + 2;
     n_file = file - 1;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank + 2;
     n_file = file + 1;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank + 1;
     n_file = file + 2;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank - 1;
     n_file = file - 2;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank - 2;
     n_file = file - 1;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank - 2;
     n_file = file + 1;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     n_rank = rank - 1;
     n_file = file + 2;
     if bounds(n_rank, n_file) {
-        output |= Bitboard::one_hot_square(Location {rank: n_rank, file: n_file});
+        output |= Bitboard::one_hot_square(Location {
+                                               rank: n_rank,
+                                               file: n_file,
+                                           });
     }
     output
 }
@@ -153,7 +201,10 @@ fn get_bishop_moves(rank: u8, file: u8) -> u64 {
     for n_rank in 0..8i8 {
         for n_file in 0..8i8 {
             if (rank as i8 - n_rank).abs() == (file as i8 - n_file).abs() && n_rank != rank as i8 {
-                output |= Bitboard::one_hot_square(Location {rank:n_rank as u8,file:n_file as u8});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: n_rank as u8,
+                                                       file: n_file as u8,
+                                                   });
             }
         }
     }
@@ -167,9 +218,15 @@ fn get_rook_moves(rank: u8, file: u8) -> u64 {
     for n_rank in 0..8 {
         for n_file in 0..8 {
             if (n_rank == rank) && (n_file != file) {
-                output |= Bitboard::one_hot_square(Location {rank:n_rank,file:n_file});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: n_rank,
+                                                       file: n_file,
+                                                   });
             } else if (n_file == file) && (n_rank != rank) {
-                output |= Bitboard::one_hot_square(Location {rank:n_rank,file:n_file});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: n_rank,
+                                                       file: n_file,
+                                                   });
             }
         }
     }
@@ -189,11 +246,17 @@ fn get_king_moves(rank: u8, file: u8) -> u64 {
     for n_rank in (rank - 1)..(rank + 2) {
         for n_file in (file - 1)..(file + 2) {
             if bounds(n_rank, n_file) {
-                output |= Bitboard::one_hot_square(Location {rank:n_rank,file:n_file});
+                output |= Bitboard::one_hot_square(Location {
+                                                       rank: n_rank,
+                                                       file: n_file,
+                                                   });
             }
         }
     }
     // AND out the kings current position
-    output &= !Bitboard::one_hot_square(Location {rank:rank,file:file});
+    output &= !Bitboard::one_hot_square(Location {
+                                            rank: rank,
+                                            file: file,
+                                        });
     output
 }

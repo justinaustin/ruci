@@ -14,28 +14,28 @@ fn is_pseudo_legal_move(board: &Board, start: Location, end: Location) -> bool {
     let end_one_hot = Bitboard::one_hot_square(end);
     // check if the correct color piece is at the start location
     if board.active_color == Color::White && white_board & start_one_hot == 0 {
-        return false
+        return false;
     } else if board.active_color == Color::Black && black_board & start_one_hot == 0 {
-        return false
+        return false;
     }
     if board.board.white_pawns & start_one_hot != 0 {
         // TODO: capture OR regular move
         let moves = Table::pawn_t_white[Table::index(start.rank, start.file)];
         let captures = Table::pawn_capture_t_white[Table::index(start.rank, start.file)];
-    } 
+    }
     false
 }
 
 pub fn is_valid_move_string(board: &Board, chess_move: &str) -> bool {
-	let start_pos: String = chess_move.chars().take(2).collect();
-	let end_pos: String = chess_move.chars().skip(2).take(2).collect();
-	let start = Location::parse_notation(&start_pos);
-	let end = Location::parse_notation(&end_pos);
-	is_valid_move(board, start, end)
+    let start_pos: String = chess_move.chars().take(2).collect();
+    let end_pos: String = chess_move.chars().skip(2).take(2).collect();
+    let start = Location::parse_notation(&start_pos);
+    let end = Location::parse_notation(&end_pos);
+    is_valid_move(board, start, end)
 }
 
 pub fn is_checkmate(board: &Board) -> bool {
-    // iterates through every piece and sees if 
+    // iterates through every piece and sees if
     // there are any legal moves
     for rank in 0..8 {
         for file in 0..8 {
@@ -43,8 +43,14 @@ pub fn is_checkmate(board: &Board) -> bool {
                 if p.color == board.active_color {
                     for new_rank in 0..8 {
                         for new_file in 0..8 {
-                            let old_loc = Location { rank: rank as u8, file: file as u8 };
-                            let new_loc = Location { rank: new_rank as u8, file: new_file as u8 };
+                            let old_loc = Location {
+                                rank: rank as u8,
+                                file: file as u8,
+                            };
+                            let new_loc = Location {
+                                rank: new_rank as u8,
+                                file: new_file as u8,
+                            };
                             if is_valid_move(board, old_loc, new_loc) {
                                 return false;
                             }
@@ -64,8 +70,14 @@ pub fn is_stalemate(board: &Board) -> bool {
                 if p.color == board.active_color {
                     for new_rank in 0..8 {
                         for new_file in 0..8 {
-                            let old_loc = Location { rank: rank as u8, file: file as u8 };
-                            let new_loc = Location { rank: new_rank as u8, file: new_file as u8 };
+                            let old_loc = Location {
+                                rank: rank as u8,
+                                file: file as u8,
+                            };
+                            let new_loc = Location {
+                                rank: new_rank as u8,
+                                file: new_file as u8,
+                            };
                             if is_valid_move(board, old_loc, new_loc) {
                                 return false;
                             }
@@ -79,31 +91,31 @@ pub fn is_stalemate(board: &Board) -> bool {
 }
 
 fn is_valid_move(board: &Board, start: Location, end: Location) -> bool {
-	if start == end {
-		return false
-	}
-	if start.file > 7 || start.rank > 7 || end.file > 7 || end.rank > 7 {
-		return false
-	}
-	match board.board[start.rank as usize][start.file as usize] {
-		None => false,
-		Some(p) => {
-			if p.color != board.active_color {
-				return false
-			}
-			if would_king_be_in_check(board, p, start, end) {
-				return false
-			}
-			match p.piece_type {
-				Type::Pawn => is_valid_pawn_move(board, p, start, end),
-				Type::Bishop => is_valid_bishop_move(board, p, start, end),
-				Type::Knight => is_valid_knight_move(board, p, start, end),
-				Type::Rook => is_valid_rook_move(board, p, start, end),
-				Type::Queen => is_valid_queen_move(board, p, start, end),
-				Type::King => is_valid_king_move(board, p, start, end)
-			}
-		}
-	}
+    if start == end {
+        return false;
+    }
+    if start.file > 7 || start.rank > 7 || end.file > 7 || end.rank > 7 {
+        return false;
+    }
+    match board.board[start.rank as usize][start.file as usize] {
+        None => false,
+        Some(p) => {
+            if p.color != board.active_color {
+                return false;
+            }
+            if would_king_be_in_check(board, p, start, end) {
+                return false;
+            }
+            match p.piece_type {
+                Type::Pawn => is_valid_pawn_move(board, p, start, end),
+                Type::Bishop => is_valid_bishop_move(board, p, start, end),
+                Type::Knight => is_valid_knight_move(board, p, start, end),
+                Type::Rook => is_valid_rook_move(board, p, start, end),
+                Type::Queen => is_valid_queen_move(board, p, start, end),
+                Type::King => is_valid_king_move(board, p, start, end),
+            }
+        }
+    }
 }
 
 pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
@@ -111,7 +123,10 @@ pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
     if let Some(p) = board.board[start.rank as usize][start.file as usize] {
         for rank in 0..8 {
             for file in 0..8 {
-                let new_loc = Location { rank: rank, file: file };
+                let new_loc = Location {
+                    rank: rank,
+                    file: file,
+                };
                 if is_valid_move(board, start, new_loc) {
                     output.push(new_loc);
                 }
@@ -122,130 +137,158 @@ pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
 }
 
 fn would_king_be_in_check(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
-	// TODO: handle updating castling, en passant, etc
-	let mut new_board = board.clone();
-	new_board.board[start.rank as usize][start.file as usize] = None;
-	new_board.board[end.rank as usize][end.file as usize] = Some(piece);
-	is_king_in_check(&new_board, new_board.active_color)
+    // TODO: handle updating castling, en passant, etc
+    let mut new_board = board.clone();
+    new_board.board[start.rank as usize][start.file as usize] = None;
+    new_board.board[end.rank as usize][end.file as usize] = Some(piece);
+    is_king_in_check(&new_board, new_board.active_color)
 }
 
 fn is_king_in_check(board: &Board, color: Color) -> bool {
-	// find the king
-	let mut king_location = Location { rank: 0, file: 0 };
-	for rank in 0..8 {
-		for file in 0..8 {
-			if let Some(p) = board.board[rank][file] {
-				match p.piece_type {
-					Type::King => if p.color == color {
-						king_location.rank = rank as u8;
-						king_location.file = file as u8;
-					},
-					_ => {}
-				}
-			}
-		}
-	}
-	// iterate through all opposite colored pieces and see if they can
-	// move to the king's location
-	for rank in 0..8 {
-		for file in 0..8 {
-			if let Some(p) = board.board[rank][file] {
-				if p.color != color {
-					let location = Location { rank: rank as u8, file: file as u8 };
-					match p.piece_type {
-						Type::Pawn => if is_valid_pawn_move(board, p, location, king_location) { 
-							return true 
-						},
-						Type::Bishop => if is_valid_bishop_move(board, p, location, king_location) { 
-							return true 
-						},
-						Type::Knight => if is_valid_knight_move(board, p, location, king_location) { 
-							return true 
-						},
-						Type::Rook => if is_valid_rook_move(board, p, location, king_location) { 
-							return true 
-						},
-						Type::Queen => if is_valid_queen_move(board, p, location, king_location) { 
-							return true 
-						},
-						Type::King => if is_valid_king_move(board, p, location, king_location) { 
-							return true 
-						},
-					}
-				}
-			}
-		}
-	}
-	false
+    // find the king
+    let mut king_location = Location { rank: 0, file: 0 };
+    for rank in 0..8 {
+        for file in 0..8 {
+            if let Some(p) = board.board[rank][file] {
+                match p.piece_type {
+                    Type::King => {
+                        if p.color == color {
+                            king_location.rank = rank as u8;
+                            king_location.file = file as u8;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    // iterate through all opposite colored pieces and see if they can
+    // move to the king's location
+    for rank in 0..8 {
+        for file in 0..8 {
+            if let Some(p) = board.board[rank][file] {
+                if p.color != color {
+                    let location = Location {
+                        rank: rank as u8,
+                        file: file as u8,
+                    };
+                    match p.piece_type {
+                        Type::Pawn => {
+                            if is_valid_pawn_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                        Type::Bishop => {
+                            if is_valid_bishop_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                        Type::Knight => {
+                            if is_valid_knight_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                        Type::Rook => {
+                            if is_valid_rook_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                        Type::Queen => {
+                            if is_valid_queen_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                        Type::King => {
+                            if is_valid_king_move(board, p, location, king_location) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
 }
 
 fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     if start == end {
-        return false
+        return false;
     }
-	// no capture
-	if start.file == end.file {
-		if board.board[end.rank as usize][end.file as usize] == None {
-			// pawns first move can be two spaces
-			match piece.color {
+    // no capture
+    if start.file == end.file {
+        if board.board[end.rank as usize][end.file as usize] == None {
+            // pawns first move can be two spaces
+            match piece.color {
                 // make sure there's no piece in the way
-				Color::White => if start.rank == 1 && end.rank == 3 {
-					return board.board[2][end.file as usize] == None;
-				},
-				Color::Black => if start.rank == 6 && end.rank == 4 {
-					return board.board[5][end.file as usize] == None;
-				}
-			}
-			match piece.color {
-				Color::White => return end.rank == start.rank + 1,
-				Color::Black => return end.rank as i8 == start.rank as i8 - 1
-			}
-		}
-	} else if ((start.file as i8) - (end.file as i8)).abs() == 1 {
-		match board.board[end.rank as usize][end.file as usize] {
-			None => {
-				// check en passant
-				match board.en_passant_square {
-					None => return false,
-					Some(location) => return end == location && 
-                        ((start.rank as i8) - (end.rank as i8)).abs() == 1
-				}
-			},
-			Some(p) => {
-				match piece.color {
-					Color::White => return p.color == Color::Black &&
-						end.rank == start.rank + 1,
-					Color::Black => return p.color == Color::White &&
-						end.rank as i8 == start.rank as i8 - 1
-				}
-			}
-		}
-	}
-	false
+                Color::White => {
+                    if start.rank == 1 && end.rank == 3 {
+                        return board.board[2][end.file as usize] == None;
+                    }
+                }
+                Color::Black => {
+                    if start.rank == 6 && end.rank == 4 {
+                        return board.board[5][end.file as usize] == None;
+                    }
+                }
+            }
+            match piece.color {
+                Color::White => return end.rank == start.rank + 1,
+                Color::Black => return end.rank as i8 == start.rank as i8 - 1,
+            }
+        }
+    } else if ((start.file as i8) - (end.file as i8)).abs() == 1 {
+        match board.board[end.rank as usize][end.file as usize] {
+            None => {
+                // check en passant
+                match board.en_passant_square {
+                    None => return false,
+                    Some(location) => {
+                        return end == location && ((start.rank as i8) - (end.rank as i8)).abs() == 1
+                    }
+                }
+            }
+            Some(p) => {
+                match piece.color {
+                    Color::White => return p.color == Color::Black && end.rank == start.rank + 1,
+                    Color::Black => {
+                        return p.color == Color::White && end.rank as i8 == start.rank as i8 - 1
+                    }
+                }
+            }
+        }
+    }
+    false
 }
 
 fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     if start == end {
-        return false
+        return false;
     }
-	let (high_rank, low_rank) = 
-		if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
-	let (high_file, low_file) = 
-		if start.file > end.file {(start.file, end.file)} else {(end.file, start.file)};
+    let (high_rank, low_rank) = if start.rank > end.rank {
+        (start.rank, end.rank)
+    } else {
+        (end.rank, start.rank)
+    };
+    let (high_file, low_file) = if start.file > end.file {
+        (start.file, end.file)
+    } else {
+        (end.file, start.file)
+    };
 
-	// did it move diagonally?
-	if high_rank - low_rank != high_file - low_file {
-		return false
-	}
+    // did it move diagonally?
+    if high_rank - low_rank != high_file - low_file {
+        return false;
+    }
 
-	// check that no pieces are in the path
+    // check that no pieces are in the path
     if end.rank > start.rank {
         if end.file > start.file {
             // northwest
             let mut file = low_file + 1;
             for rank in (low_rank + 1)..high_rank {
                 if board.board[rank as usize][file as usize] != None {
-                    return false
+                    return false;
                 }
                 file = file + 1;
             }
@@ -254,7 +297,7 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             let mut file = high_file - 1;
             for rank in (low_rank + 1)..high_rank {
                 if board.board[rank as usize][file as usize] != None {
-                    return false
+                    return false;
                 }
                 file = file - 1;
             }
@@ -265,7 +308,7 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             let mut file = low_file + 1;
             for rank in ((low_rank + 1)..high_rank).rev() {
                 if board.board[rank as usize][file as usize] != None {
-                    return false
+                    return false;
                 }
                 file = file + 1;
             }
@@ -274,7 +317,7 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             let mut file = high_file - 1;
             for rank in ((low_rank + 1)..high_rank).rev() {
                 if board.board[rank as usize][file as usize] != None {
-                    return false
+                    return false;
                 }
                 file = file - 1;
             }
@@ -289,33 +332,39 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
 
 fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     if start == end {
-        return false
+        return false;
     }
-    let (high_rank, low_rank) = 
-        if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
-    let (high_file, low_file) = 
-        if start.file > end.file {(start.file, end.file)} else {(end.file, start.file)};
+    let (high_rank, low_rank) = if start.rank > end.rank {
+        (start.rank, end.rank)
+    } else {
+        (end.rank, start.rank)
+    };
+    let (high_file, low_file) = if start.file > end.file {
+        (start.file, end.file)
+    } else {
+        (end.file, start.file)
+    };
 
     if high_rank - low_rank > 2 || high_file - low_file > 2 {
-        return false
+        return false;
     }
     if high_rank - low_rank == 2 {
         if high_file - low_file == 1 {
             match board.board[end.rank as usize][end.file as usize] {
                 None => return true,
-                Some(p) => return piece.color != p.color
+                Some(p) => return piece.color != p.color,
             }
         } else {
-            return false
+            return false;
         }
     } else if high_rank - low_rank == 1 {
         if high_file - low_file == 2 {
             match board.board[end.rank as usize][end.file as usize] {
                 None => return true,
-                Some(p) => return piece.color != p.color
+                Some(p) => return piece.color != p.color,
             }
         } else {
-            return false
+            return false;
         }
     }
     false
@@ -323,28 +372,34 @@ fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Locat
 
 fn is_valid_rook_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     if start == end {
-        return false
+        return false;
     }
-    let (high_rank, low_rank) = 
-        if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
-    let (high_file, low_file) = 
-        if start.file > end.file {(start.file, end.file)} else {(end.file, start.file)};
+    let (high_rank, low_rank) = if start.rank > end.rank {
+        (start.rank, end.rank)
+    } else {
+        (end.rank, start.rank)
+    };
+    let (high_file, low_file) = if start.file > end.file {
+        (start.file, end.file)
+    } else {
+        (end.file, start.file)
+    };
 
     if start.rank != end.rank && start.file != end.file {
-        return false
+        return false;
     }
 
     // check that no pieces are in the path
     if start.rank == end.rank {
         for file in (low_file + 1)..high_file {
             if board.board[start.rank as usize][file as usize] != None {
-                return false
+                return false;
             }
         }
     } else {
         for rank in (low_rank + 1)..high_rank {
             if board.board[rank as usize][start.file as usize] != None {
-                return false
+                return false;
             }
         }
     }
@@ -355,55 +410,74 @@ fn is_valid_rook_move(board: &Board, piece: Piece, start: Location, end: Locatio
 }
 
 fn is_valid_queen_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
-    is_valid_bishop_move(board, piece, start, end) ||
-        is_valid_rook_move(board, piece, start, end)
+    is_valid_bishop_move(board, piece, start, end) || is_valid_rook_move(board, piece, start, end)
 }
 
 fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     if start == end {
-        return false
+        return false;
     }
-    let (high_rank, low_rank) = 
-        if start.rank > end.rank {(start.rank, end.rank)} else {(end.rank, start.rank)};
-    let (high_file, low_file) = 
-        if start.file > end.file {(start.file, end.file)} else {(end.file, start.file)};
+    let (high_rank, low_rank) = if start.rank > end.rank {
+        (start.rank, end.rank)
+    } else {
+        (end.rank, start.rank)
+    };
+    let (high_file, low_file) = if start.file > end.file {
+        (start.file, end.file)
+    } else {
+        (end.file, start.file)
+    };
 
     // check castling
     match piece.color {
         Color::White => {
             if end.rank == 0 && end.file == 6 && board.castling_availability.white_kingside {
                 if board.board[0][5] == None && board.board[0][6] == None {
-                    return !is_king_in_check(board, Color::White) && 
-                        !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 5 })
+                    return !is_king_in_check(board, Color::White) &&
+                           !would_king_be_in_check(board,
+                                                   piece,
+                                                   start,
+                                                   Location { rank: 0, file: 5 });
                 }
-            } else if end.rank == 0 && end.file == 2 && board.castling_availability.white_queenside {
+            } else if end.rank == 0 && end.file == 2 &&
+                      board.castling_availability.white_queenside {
                 if board.board[0][3] == None && board.board[0][2] == None {
                     return !is_king_in_check(board, Color::White) &&
-                        !would_king_be_in_check(board, piece, start, Location { rank: 0, file: 3 })
+                           !would_king_be_in_check(board,
+                                                   piece,
+                                                   start,
+                                                   Location { rank: 0, file: 3 });
                 }
             }
-        },
+        }
         Color::Black => {
             if end.rank == 7 && end.file == 6 && board.castling_availability.black_kingside {
                 if board.board[7][5] == None && board.board[7][6] == None {
                     return !is_king_in_check(board, Color::Black) &&
-                        !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 5 })
+                           !would_king_be_in_check(board,
+                                                   piece,
+                                                   start,
+                                                   Location { rank: 7, file: 5 });
                 }
-            } else if end.rank == 7 && end.file == 2 && board.castling_availability.black_queenside {
-                if board.board[7][3] == None && board.board[7][2] == None { 
+            } else if end.rank == 7 && end.file == 2 &&
+                      board.castling_availability.black_queenside {
+                if board.board[7][3] == None && board.board[7][2] == None {
                     return !is_king_in_check(board, Color::Black) &&
-                        !would_king_be_in_check(board, piece, start, Location { rank: 7, file: 3 })
+                           !would_king_be_in_check(board,
+                                                   piece,
+                                                   start,
+                                                   Location { rank: 7, file: 3 });
                 }
             }
         }
     }
 
     if high_rank - low_rank > 1 || high_file - low_file > 1 {
-        return false
+        return false;
     }
     match board.board[end.rank as usize][end.file as usize] {
         None => return true,
-        Some(p) => return piece.color != p.color
+        Some(p) => return piece.color != p.color,
     }
 }
 

@@ -7,7 +7,7 @@ use std::char;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Location {
     pub file: u8,
-    pub rank: u8
+    pub rank: u8,
 }
 
 impl Location {
@@ -22,7 +22,7 @@ impl Location {
             5 => output.push('f'),
             6 => output.push('g'),
             7 => output.push('h'),
-            _ => ()
+            _ => (),
         }
         output.push(char::from_digit((self.rank + 1) as u32, 10).unwrap());
         output
@@ -50,7 +50,7 @@ impl Location {
                 '6' => output_location.rank = 5,
                 '7' => output_location.rank = 6,
                 '8' => output_location.rank = 7,
-                _ => panic!("location parse_notation")
+                _ => panic!("location parse_notation"),
             }
         }
         output_location
@@ -62,7 +62,7 @@ pub struct CastlingAvailability {
     pub white_kingside: bool,
     pub white_queenside: bool,
     pub black_kingside: bool,
-    pub black_queenside: bool
+    pub black_queenside: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -72,7 +72,7 @@ pub struct Board {
     pub castling_availability: CastlingAvailability,
     pub en_passant_square: Option<Location>,
     pub halfmove_clock: u8,
-    pub fullmove_number: u8
+    pub fullmove_number: u8,
 }
 
 impl Board {
@@ -85,11 +85,11 @@ impl Board {
                 white_kingside: false,
                 white_queenside: false,
                 black_kingside: false,
-                black_queenside: false
+                black_queenside: false,
             },
             en_passant_square: None,
             halfmove_clock: 0,
-            fullmove_number: 0
+            fullmove_number: 0,
         };
         // piece placement, active color, castling availability,
         // en passant target square, halfmove clock, fullmove number
@@ -105,7 +105,7 @@ impl Board {
         let fullmove_number = split_fen[5];
 
         if active_color == "b" {
-           output_board.active_color = Color::Black;
+            output_board.active_color = Color::Black;
         }
 
         let castle = castling_availability.to_string();
@@ -123,8 +123,8 @@ impl Board {
         }
 
         if en_passant_target_square != "-" {
-            output_board.en_passant_square = Some
-                (Location::parse_notation(en_passant_target_square));
+            output_board.en_passant_square =
+                Some(Location::parse_notation(en_passant_target_square));
         }
 
         let halfmove_clock_string = halfmove_clock.to_string();
@@ -143,13 +143,20 @@ impl Board {
     pub fn after_move(&self, start: Location, end: Location) -> Board {
         let mut new_board = self.clone();
         new_board.board.after_move(start, end);
-        new_board.active_color =
-            if new_board.active_color == Color::White {Color::Black} else {Color::White};
+        new_board.active_color = if new_board.active_color == Color::White {
+            Color::Black
+        } else {
+            Color::White
+        };
         // pawn promotion
         new_board.board.promote_pawns();
         // castling
-        if new_board.board.check_kingside_castle(&self.board, self.active_color == Color::White) ||
-            new_board.board.check_queenside_castle(&self.board, self.active_color== Color::White) {
+        if new_board
+               .board
+               .check_kingside_castle(&self.board, self.active_color == Color::White) ||
+           new_board
+               .board
+               .check_queenside_castle(&self.board, self.active_color == Color::White) {
             if self.active_color == Color::White {
                 new_board.castling_availability.white_kingside = false;
                 new_board.castling_availability.white_queenside = false;
@@ -157,7 +164,7 @@ impl Board {
                 new_board.castling_availability.black_kingside = false;
                 new_board.castling_availability.black_queenside = false;
             }
-        } 
+        }
         // update castling availability if rook moved
         if new_board.board.check_rook_move_castling_kingside(true) {
             new_board.castling_availability.white_kingside = false;
@@ -170,31 +177,31 @@ impl Board {
         }
 
         // TODO:en passant
-        
 
-//             // en passant
-//             if let Some(square) = new_board.en_passant_square {
-//                 if p.piece_type == Type::Pawn && end == square {
-//                     // capture the en passant pawn
-//                     if p.color == Color::White {
-//                         new_board.board[end.rank as usize - 1][end.file as usize] = None;
-//                     } else {
-//                         new_board.board[end.rank as usize + 1][end.file as usize] = None;
-//                     }
-//                 }
-//             }
-//             new_board.en_passant_square = None;
-//             // update the en_passant_square if needed
-//             if p.piece_type == Type::Pawn {
-//                 if p.color == Color::White {
-//                     if end.rank - start.rank == 2 {
-//                         new_board.en_passant_square = Some(Location {rank: 2, file: end.file});
-//                     }
-//                 } else if start.rank - end.rank == 2 {
-//                     new_board.en_passant_square = Some(Location {rank: 5, file: end.file});
-//                 }
-//             }
-//         }
+
+        //             // en passant
+        //             if let Some(square) = new_board.en_passant_square {
+        //                 if p.piece_type == Type::Pawn && end == square {
+        //                     // capture the en passant pawn
+        //                     if p.color == Color::White {
+        //                         new_board.board[end.rank as usize - 1][end.file as usize] = None;
+        //                     } else {
+        //                         new_board.board[end.rank as usize + 1][end.file as usize] = None;
+        //                     }
+        //                 }
+        //             }
+        //             new_board.en_passant_square = None;
+        //             // update the en_passant_square if needed
+        //             if p.piece_type == Type::Pawn {
+        //                 if p.color == Color::White {
+        //                     if end.rank - start.rank == 2 {
+        //                         new_board.en_passant_square = Some(Location {rank: 2, file: end.file});
+        //                     }
+        //                 } else if start.rank - end.rank == 2 {
+        //                     new_board.en_passant_square = Some(Location {rank: 5, file: end.file});
+        //                 }
+        //             }
+        //         }
         new_board
     }
 }

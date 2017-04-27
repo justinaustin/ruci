@@ -40,9 +40,7 @@ fn uci_new_game() {
 }
 
 fn parse_go_command(game_state: Arc<Mutex<State>>) {
-    thread::spawn(move || {
-        game_state.lock().unwrap().go();
-    });
+    thread::spawn(move || { game_state.lock().unwrap().go(); });
 }
 
 fn stop() {
@@ -58,18 +56,18 @@ fn evaluate_position(input: &Vec<&str>) {
         let depth = input[1].parse::<u8>().unwrap();
         let mut s = input[2].to_owned();
         s.push_str(" ");
-        s.push_str(input[3]);		
+        s.push_str(input[3]);
         s.push_str(" ");
-        s.push_str(input[4]);		
+        s.push_str(input[4]);
         s.push_str(" ");
-        s.push_str(input[5]);		
+        s.push_str(input[5]);
         s.push_str(" ");
-        s.push_str(input[6]);		
+        s.push_str(input[6]);
         s.push_str(" ");
-        s.push_str(input[7]);		
+        s.push_str(input[7]);
         let board = Board::from_fen(&s);
         let mut line = Vec::new();
-        // println!("eval: {}", evaluation::pvs(&board, -5000.0, 5000.0, depth, 
+        // println!("eval: {}", evaluation::pvs(&board, -5000.0, 5000.0, depth,
         //                                      &mut line, &mut table, &zobrist));
         print!("bestmoves: ");
         for m in line {
@@ -98,7 +96,7 @@ fn main() {
                     "ponderhit" => ponder_hit(),
                     "eval" => evaluate_position(&tokens),
                     "quit" => break,
-                    _ => println!("Unknown command: {}", tokens[0])
+                    _ => println!("Unknown command: {}", tokens[0]),
                 }
             }
         }

@@ -7,11 +7,11 @@ pub enum Type {
     Knight,
     Rook,
     Queen,
-    King
+    King,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Piece {
     pub piece_type: Type,
-    pub color: Color
+    pub color: Color,
 }
