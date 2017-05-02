@@ -191,7 +191,7 @@ impl Bitboard {
     }
 
     /// checks if there are any pawns to promote and
-    /// replaces them with queens (needs to be more flexable)
+    /// replaces them with queens (TODO: needs to be more flexable)
     pub fn promote_pawns(&mut self) {
         let promoted_white_pawns = self.white_pawns >> 56;
         let promoted_black_pawns = self.black_pawns & 0x00000000000000FF;
