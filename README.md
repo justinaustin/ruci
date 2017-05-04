@@ -1,5 +1,5 @@
 # ruci
-This project was submitted by Justin Austin as my final project for [CIS 198](//cis198-2016f.github.io) at the University of Pennsylvania in fall 2016.
+This project was submitted ([this commit](https://github.com/justinaustin/ruci/commit/87b171d927f6cbfca6529b632982f504f98d5edc)) by Justin Austin as my final project for [CIS 198](//cis198-2016f.github.io) at the University of Pennsylvania in fall 2016.
 
 While this project was completed for a course, I plan to continue development in my spare time. 
 
