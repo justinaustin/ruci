@@ -6,20 +6,13 @@ use evaluation;
 
 pub struct State {
     pub board: Board,
-    pub hashmap: HashMap<u64, Entry>,
 }
 
 impl State {
     pub fn new() -> State {
         State {
             board: Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-            hashmap: HashMap::new(),
-            zobrist: Table::new(),
         }
-    }
-
-    pub fn print_board(&self) {
-        self.board.print_board();
     }
 
     pub fn update_position(&mut self, input: &Vec<&str>) {
@@ -68,14 +61,8 @@ impl State {
         let mut depth = 1;
         let mut best_move = "".to_owned();
         while depth < 5 {
-            let mut line = Vec::new();
-            let score = evaluation::pvs(&self.board,
-                                        f64::NEG_INFINITY,
-                                        f64::INFINITY,
-                                        depth,
-                                        &mut line,
-                                        &mut self.hashmap,
-                                        &self.zobrist) * 100.0;
+            let mut line: Vec<String> = Vec::new();
+            let score = evaluation::evaluate_position(&self.board.board);
             print!("info depth {} score cp {:.0} nodes {} time {} pv ",
                    depth,
                    score,
@@ -87,9 +74,10 @@ impl State {
             println!("");
             best_move = line[0].clone();
             best_move.push_str(&line[1].clone());
-            if score.is_infinite() {
-                break;
-            }
+            // TODO: check if king has been captured
+            // if score.is_infinite() {
+            //     break;
+            // }
             depth += 1;
         }
         println!("bestmove {}", best_move);
