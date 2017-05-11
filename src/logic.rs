@@ -2,7 +2,6 @@ use bitboard::Bitboard;
 use board::{Board, Location};
 use piece::{Piece, Type};
 use color::Color;
-use table;
 
 // TODO: pawn promotion
 
@@ -17,11 +16,6 @@ fn is_pseudo_legal_move(board: &Board, start: Location, end: Location) -> bool {
         return false;
     } else if board.active_color == Color::Black && black_board & start_one_hot == 0 {
         return false;
-    }
-    if board.board.white_pawns & start_one_hot != 0 {
-        // TODO: capture OR regular move
-        let moves = Table::pawn_t_white[Table::index(start.rank, start.file)];
-        let captures = Table::pawn_capture_t_white[Table::index(start.rank, start.file)];
     }
     false
 }
@@ -39,7 +33,12 @@ pub fn is_checkmate(board: &Board) -> bool {
     // there are any legal moves
     for rank in 0..8 {
         for file in 0..8 {
-            if let Some(p) = board.board[rank][file] {
+            if let Some(p) = board
+                   .board
+                   .get_piece(Location {
+                                  rank: rank as u8,
+                                  file: file as u8,
+                              }) {
                 if p.color == board.active_color {
                     for new_rank in 0..8 {
                         for new_file in 0..8 {
@@ -66,7 +65,12 @@ pub fn is_checkmate(board: &Board) -> bool {
 pub fn is_stalemate(board: &Board) -> bool {
     for rank in 0..8 {
         for file in 0..8 {
-            if let Some(p) = board.board[rank][file] {
+            if let Some(p) = board
+                   .board
+                   .get_piece(Location {
+                                  rank: rank as u8,
+                                  file: file as u8,
+                              }) {
                 if p.color == board.active_color {
                     for new_rank in 0..8 {
                         for new_file in 0..8 {
@@ -97,7 +101,7 @@ fn is_valid_move(board: &Board, start: Location, end: Location) -> bool {
     if start.file > 7 || start.rank > 7 || end.file > 7 || end.rank > 7 {
         return false;
     }
-    match board.board[start.rank as usize][start.file as usize] {
+    match board.board.get_piece(start) {
         None => false,
         Some(p) => {
             if p.color != board.active_color {
@@ -120,7 +124,7 @@ fn is_valid_move(board: &Board, start: Location, end: Location) -> bool {
 
 pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
     let mut output = Vec::new();
-    if let Some(p) = board.board[start.rank as usize][start.file as usize] {
+    if let Some(p) = board.board.get_piece(start) {
         for rank in 0..8 {
             for file in 0..8 {
                 let new_loc = Location {
@@ -139,8 +143,7 @@ pub fn get_legal_moves(board: &Board, start: Location) -> Vec<Location> {
 fn would_king_be_in_check(board: &Board, piece: Piece, start: Location, end: Location) -> bool {
     // TODO: handle updating castling, en passant, etc
     let mut new_board = board.clone();
-    new_board.board[start.rank as usize][start.file as usize] = None;
-    new_board.board[end.rank as usize][end.file as usize] = Some(piece);
+    new_board.board.after_move(start, end);
     is_king_in_check(&new_board, new_board.active_color)
 }
 
@@ -149,7 +152,12 @@ fn is_king_in_check(board: &Board, color: Color) -> bool {
     let mut king_location = Location { rank: 0, file: 0 };
     for rank in 0..8 {
         for file in 0..8 {
-            if let Some(p) = board.board[rank][file] {
+            if let Some(p) = board
+                   .board
+                   .get_piece(Location {
+                                  rank: rank as u8,
+                                  file: file as u8,
+                              }) {
                 match p.piece_type {
                     Type::King => {
                         if p.color == color {
@@ -166,7 +174,12 @@ fn is_king_in_check(board: &Board, color: Color) -> bool {
     // move to the king's location
     for rank in 0..8 {
         for file in 0..8 {
-            if let Some(p) = board.board[rank][file] {
+            if let Some(p) = board
+                   .board
+                   .get_piece(Location {
+                                  rank: rank as u8,
+                                  file: file as u8,
+                              }) {
                 if p.color != color {
                     let location = Location {
                         rank: rank as u8,
@@ -217,18 +230,28 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
     }
     // no capture
     if start.file == end.file {
-        if board.board[end.rank as usize][end.file as usize] == None {
+        if board.board.get_piece(end) == None {
             // pawns first move can be two spaces
             match piece.color {
                 // make sure there's no piece in the way
                 Color::White => {
                     if start.rank == 1 && end.rank == 3 {
-                        return board.board[2][end.file as usize] == None;
+                        return board
+                                   .board
+                                   .get_piece(Location {
+                                                  rank: 2,
+                                                  file: end.file,
+                                              }) == None;
                     }
                 }
                 Color::Black => {
                     if start.rank == 6 && end.rank == 4 {
-                        return board.board[5][end.file as usize] == None;
+                        return board
+                                   .board
+                                   .get_piece(Location {
+                                                  rank: 5,
+                                                  file: end.file,
+                                              }) == None;
                     }
                 }
             }
@@ -238,7 +261,7 @@ fn is_valid_pawn_move(board: &Board, piece: Piece, start: Location, end: Locatio
             }
         }
     } else if ((start.file as i8) - (end.file as i8)).abs() == 1 {
-        match board.board[end.rank as usize][end.file as usize] {
+        match board.board.get_piece(end) {
             None => {
                 // check en passant
                 match board.en_passant_square {
@@ -287,7 +310,12 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             // northwest
             let mut file = low_file + 1;
             for rank in (low_rank + 1)..high_rank {
-                if board.board[rank as usize][file as usize] != None {
+                if board
+                       .board
+                       .get_piece(Location {
+                                      rank: rank,
+                                      file: file,
+                                  }) != None {
                     return false;
                 }
                 file = file + 1;
@@ -296,7 +324,12 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             // northeast
             let mut file = high_file - 1;
             for rank in (low_rank + 1)..high_rank {
-                if board.board[rank as usize][file as usize] != None {
+                if board
+                       .board
+                       .get_piece(Location {
+                                      rank: rank,
+                                      file: file,
+                                  }) != None {
                     return false;
                 }
                 file = file - 1;
@@ -307,7 +340,12 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             // southwest
             let mut file = low_file + 1;
             for rank in ((low_rank + 1)..high_rank).rev() {
-                if board.board[rank as usize][file as usize] != None {
+                if board
+                       .board
+                       .get_piece(Location {
+                                      rank: rank,
+                                      file: file,
+                                  }) != None {
                     return false;
                 }
                 file = file + 1;
@@ -316,7 +354,12 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
             // southeast
             let mut file = high_file - 1;
             for rank in ((low_rank + 1)..high_rank).rev() {
-                if board.board[rank as usize][file as usize] != None {
+                if board
+                       .board
+                       .get_piece(Location {
+                                      rank: rank,
+                                      file: file,
+                                  }) != None {
                     return false;
                 }
                 file = file - 1;
@@ -324,7 +367,7 @@ fn is_valid_bishop_move(board: &Board, piece: Piece, start: Location, end: Locat
         }
     }
 
-    match board.board[end.rank as usize][end.file as usize] {
+    match board.board.get_piece(end) {
         None => return true,
         Some(p) => return piece.color != p.color,
     }
@@ -350,7 +393,7 @@ fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Locat
     }
     if high_rank - low_rank == 2 {
         if high_file - low_file == 1 {
-            match board.board[end.rank as usize][end.file as usize] {
+            match board.board.get_piece(end) {
                 None => return true,
                 Some(p) => return piece.color != p.color,
             }
@@ -359,7 +402,7 @@ fn is_valid_knight_move(board: &Board, piece: Piece, start: Location, end: Locat
         }
     } else if high_rank - low_rank == 1 {
         if high_file - low_file == 2 {
-            match board.board[end.rank as usize][end.file as usize] {
+            match board.board.get_piece(end) {
                 None => return true,
                 Some(p) => return piece.color != p.color,
             }
@@ -392,18 +435,28 @@ fn is_valid_rook_move(board: &Board, piece: Piece, start: Location, end: Locatio
     // check that no pieces are in the path
     if start.rank == end.rank {
         for file in (low_file + 1)..high_file {
-            if board.board[start.rank as usize][file as usize] != None {
+            if board
+                   .board
+                   .get_piece(Location {
+                                  rank: start.rank,
+                                  file: file,
+                              }) != None {
                 return false;
             }
         }
     } else {
         for rank in (low_rank + 1)..high_rank {
-            if board.board[rank as usize][start.file as usize] != None {
+            if board
+                   .board
+                   .get_piece(Location {
+                                  rank: rank,
+                                  file: start.file,
+                              }) != None {
                 return false;
             }
         }
     }
-    match board.board[end.rank as usize][end.file as usize] {
+    match board.board.get_piece(end) {
         None => return true,
         Some(p) => return piece.color != p.color,
     }
@@ -432,7 +485,8 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
     match piece.color {
         Color::White => {
             if end.rank == 0 && end.file == 6 && board.castling_availability.white_kingside {
-                if board.board[0][5] == None && board.board[0][6] == None {
+                if board.board.get_piece(Location { rank: 0, file: 5 }) == None &&
+                   board.board.get_piece(Location { rank: 0, file: 6 }) == None {
                     return !is_king_in_check(board, Color::White) &&
                            !would_king_be_in_check(board,
                                                    piece,
@@ -441,7 +495,8 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
                 }
             } else if end.rank == 0 && end.file == 2 &&
                       board.castling_availability.white_queenside {
-                if board.board[0][3] == None && board.board[0][2] == None {
+                if board.board.get_piece(Location { rank: 0, file: 3 }) == None &&
+                   board.board.get_piece(Location { rank: 0, file: 2 }) == None {
                     return !is_king_in_check(board, Color::White) &&
                            !would_king_be_in_check(board,
                                                    piece,
@@ -452,7 +507,8 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
         }
         Color::Black => {
             if end.rank == 7 && end.file == 6 && board.castling_availability.black_kingside {
-                if board.board[7][5] == None && board.board[7][6] == None {
+                if board.board.get_piece(Location { rank: 7, file: 5 }) == None &&
+                   board.board.get_piece(Location { rank: 7, file: 6 }) == None {
                     return !is_king_in_check(board, Color::Black) &&
                            !would_king_be_in_check(board,
                                                    piece,
@@ -461,7 +517,8 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
                 }
             } else if end.rank == 7 && end.file == 2 &&
                       board.castling_availability.black_queenside {
-                if board.board[7][3] == None && board.board[7][2] == None {
+                if board.board.get_piece(Location { rank: 7, file: 3 }) == None &&
+                   board.board.get_piece(Location { rank: 7, file: 2 }) == None {
                     return !is_king_in_check(board, Color::Black) &&
                            !would_king_be_in_check(board,
                                                    piece,
@@ -475,7 +532,7 @@ fn is_valid_king_move(board: &Board, piece: Piece, start: Location, end: Locatio
     if high_rank - low_rank > 1 || high_file - low_file > 1 {
         return false;
     }
-    match board.board[end.rank as usize][end.file as usize] {
+    match board.board.get_piece(end) {
         None => return true,
         Some(p) => return piece.color != p.color,
     }

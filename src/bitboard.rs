@@ -5,6 +5,8 @@
 /// and h8 is the most significant bit
 
 use board::Location;
+use piece::{Piece, Type};
+use color::Color;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Bitboard {
@@ -21,6 +23,8 @@ pub struct Bitboard {
     pub black_rooks: u64,
     pub black_queens: u64,
     pub black_king: u64,
+
+    pub occupied: u64,
 }
 
 impl Bitboard {
@@ -39,6 +43,7 @@ impl Bitboard {
             black_rooks: 0,
             black_queens: 0,
             black_king: 0,
+            occupied: 0,
         }
     }
 
@@ -101,6 +106,12 @@ impl Bitboard {
                 index += 1;
             }
         }
+        output.occupied = output.white_pawns | output.white_bishops | output.white_knights |
+                          output.white_rooks | output.white_queens |
+                          output.white_king | output.black_pawns |
+                          output.black_bishops | output.black_knights |
+                          output.black_rooks |
+                          output.black_queens | output.black_king;
         Some(output)
     }
 
@@ -152,22 +163,13 @@ impl Bitboard {
             self.black_king &= !start;
             self.black_king |= end;
         }
+        self.occupied &= !start;
+        self.occupied |= end;
     }
 
     pub fn get_entire_board(&self) -> u64 {
-        let mut board = self.white_pawns;
-        board |= self.black_pawns;
-        board |= self.white_knights;
-        board |= self.black_knights;
-        board |= self.white_bishops;
-        board |= self.black_bishops;
-        board |= self.white_rooks;
-        board |= self.black_rooks;
-        board |= self.white_queens;
-        board |= self.black_queens;
-        board |= self.white_king;
-        board |= self.black_king;
-        board
+        let output = self.occupied;
+        output
     }
 
     pub fn get_white_pieces(&self) -> u64 {
@@ -198,10 +200,14 @@ impl Bitboard {
         if promoted_white_pawns != 0 {
             self.white_queens |= promoted_white_pawns;
             self.white_pawns &= 0x00FFFFFFFFFFFFFF;
+            self.occupied |= promoted_white_pawns;
+            self.occupied &= 0x00FFFFFFFFFFFFFF;
         }
         if promoted_black_pawns != 0 {
             self.black_queens |= promoted_black_pawns;
             self.black_pawns &= 0xFFFFFFFFFFFFFF00;
+            self.occupied |= promoted_black_pawns;
+            self.occupied &= 0xFFFFFFFFFFFFFF00;
         }
     }
 
@@ -211,11 +217,15 @@ impl Bitboard {
         if is_white && old_board.white_king == 0x10 && self.white_king == 0x40 {
             self.white_rooks &= 0xFFFFFFFFFFFFFF7F;
             self.white_rooks |= 0x20;
+            self.occupied &= 0xFFFFFFFFFFFFFF7F;
+            self.occupied |= 0x20;
             return true;
         } else if !is_white && old_board.black_king == 0x1000000000000000 &&
                   self.black_king == 0x4000000000000000 {
             self.black_rooks &= 0x7FFFFFFFFFFFFFFF;
             self.black_rooks |= 0x2000000000000000;
+            self.occupied &= 0x7FFFFFFFFFFFFFFF;
+            self.occupied |= 0x2000000000000000;
             return true;
         }
         false
@@ -227,11 +237,15 @@ impl Bitboard {
         if is_white && old_board.white_king == 0x10 && self.white_king == 0x4 {
             self.white_rooks &= 0xFFFFFFFFFFFFFFFE;
             self.white_rooks |= 0x8;
+            self.occupied &= 0xFFFFFFFFFFFFFFFE;
+            self.occupied |= 0x8;
             return true;
         } else if !is_white && old_board.black_king == 0x1000000000000000 &&
                   self.black_king == 0x400000000000000 {
             self.black_rooks &= 0xFEFFFFFFFFFFFFFF;
             self.black_rooks |= 0x800000000000000;
+            self.occupied &= 0xFEFFFFFFFFFFFFFF;
+            self.occupied |= 0x800000000000000;
             return true;
         }
         false
@@ -250,12 +264,80 @@ impl Bitboard {
         (is_white && self.white_rooks & 0x1 == 0) ||
         (!is_white && self.black_rooks & 0x100000000000000 == 0)
     }
+
+    /// returns a Piece Option representing the piece at the given
+    /// location
+    pub fn get_piece(&self, loc: Location) -> Option<Piece> {
+        let one_hot = Bitboard::one_hot_square(loc);
+        if one_hot & self.occupied == 0 {
+            return None;
+        } else if one_hot & self.white_pawns != 0 {
+            return Some(Piece {
+                            piece_type: Type::Pawn,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.white_bishops != 0 {
+            return Some(Piece {
+                            piece_type: Type::Bishop,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.white_knights != 0 {
+            return Some(Piece {
+                            piece_type: Type::Knight,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.white_rooks != 0 {
+            return Some(Piece {
+                            piece_type: Type::Rook,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.white_queens != 0 {
+            return Some(Piece {
+                            piece_type: Type::Queen,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.white_king != 0 {
+            return Some(Piece {
+                            piece_type: Type::King,
+                            color: Color::White,
+                        });
+        } else if one_hot & self.black_pawns != 0 {
+            return Some(Piece {
+                            piece_type: Type::Pawn,
+                            color: Color::Black,
+                        });
+        } else if one_hot & self.black_bishops != 0 {
+            return Some(Piece {
+                            piece_type: Type::Bishop,
+                            color: Color::Black,
+                        });
+        } else if one_hot & self.black_knights != 0 {
+            return Some(Piece {
+                            piece_type: Type::Knight,
+                            color: Color::Black,
+                        });
+        } else if one_hot & self.black_rooks != 0 {
+            return Some(Piece {
+                            piece_type: Type::Rook,
+                            color: Color::Black,
+                        });
+        } else if one_hot & self.black_queens != 0 {
+            return Some(Piece {
+                            piece_type: Type::Queen,
+                            color: Color::Black,
+                        });
+        } else {
+            return Some(Piece {
+                            piece_type: Type::King,
+                            color: Color::Black,
+                        });
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
     use bitboard::Bitboard;
-    use bitboard::EntireBitboard;
     use board::Location;
 
     #[test]
@@ -273,6 +355,7 @@ mod test {
             black_rooks: 0,
             black_queens: 0,
             black_king: 0,
+            occupied: 0,
         };
         let bitboard = Bitboard::empty();
         assert_eq!(control, bitboard);
@@ -293,6 +376,7 @@ mod test {
             black_rooks: 0x8100000000000000,
             black_queens: 0x800000000000000,
             black_king: 0x1000000000000000,
+            occupied: 0xFFFF00000000FFFF,
         };
         let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .unwrap();
@@ -314,6 +398,7 @@ mod test {
             black_rooks: 0x2100000000000000,
             black_queens: 0x4000000000000,
             black_king: 0x4000000000000000,
+            occupied: 0x67fc2104300ae769,
         };
         let bitboard = Bitboard::from_fen("rnb2rk1/2qpNNpp/p4p2/2p5/4Pp2/1B1P4/PPP2PPP/R2Q1RK1 b - - 0 2")
             .unwrap();
@@ -335,6 +420,7 @@ mod test {
             black_rooks: 0x8100000000000000,
             black_queens: 0x800000000000000,
             black_king: 0x1000000000000000,
+            occupied: 0xffff00001000efff,
         };
         let mut bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
             .unwrap();
@@ -342,22 +428,5 @@ mod test {
         let end = Location { rank: 3, file: 4 };
         bitboard.after_move(start, end);
         assert_eq!(control, bitboard);
-    }
-
-    #[test]
-    fn test_entire_board_beginning() {
-        let control = EntireBitboard(0xFFFF00000000FFFF);
-        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            .unwrap();
-        let entire = bitboard.get_entire_board();
-        assert_eq!(control, entire);
-    }
-
-    #[test]
-    fn test_entire_board_two_kings() {
-        let control = EntireBitboard(0x100008000000);
-        let bitboard = Bitboard::from_fen("8/8/4k3/8/3K4/8/8/8 w - - 3 31").unwrap();
-        let entire = bitboard.get_entire_board();
-        assert_eq!(control, entire);
     }
 }

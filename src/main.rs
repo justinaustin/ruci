@@ -7,7 +7,7 @@ mod evaluation;
 mod logic;
 mod moves;
 mod piece;
-mod table;
+// mod table;
 
 use std::collections::HashMap;
 use std::io;
@@ -66,13 +66,13 @@ fn evaluate_position(input: &Vec<&str>) {
         s.push_str(" ");
         s.push_str(input[7]);
         let board = Board::from_fen(&s);
-        let mut line = Vec::new();
+        // let mut line = Vec::new();
         // println!("eval: {}", evaluation::pvs(&board, -5000.0, 5000.0, depth,
         //                                      &mut line, &mut table, &zobrist));
-        print!("bestmoves: ");
-        for m in line {
-            print!("{}", m);
-        }
+        // print!("bestmoves: ");
+        // for m in line {
+        // print!("{}", m);
+        // }
         println!("");
     }
 }

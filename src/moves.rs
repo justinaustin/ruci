@@ -10,9 +10,7 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
-        State {
-            board: Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-        }
+        State { board: Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") }
     }
 
     pub fn update_position(&mut self, input: &Vec<&str>) {
