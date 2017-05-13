@@ -123,6 +123,20 @@ impl Bitboard {
     pub fn after_move(&mut self, start_loc: Location, end_loc: Location) {
         let start = Bitboard::one_hot_square(start_loc);
         let end = Bitboard::one_hot_square(end_loc);
+        
+        // AND out every piece at the end pos
+        self.white_pawns &= !end;
+        self.black_pawns &= !end;
+        self.white_knights &= !end;
+        self.black_knights &= !end;
+        self.white_bishops &= !end;
+        self.black_bishops &= !end;
+        self.white_rooks &= !end;
+        self.black_rooks &= !end;
+        self.white_queens &= !end;
+        self.black_queens &= !end;
+        self.white_king &= !end;
+        self.black_king &= !end;
 
         // find what piece is at the start location then AND it out
         // and OR it into end location
