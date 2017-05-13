@@ -91,87 +91,65 @@ pub fn evaluate_position(bitboard: &Bitboard) -> i32 {
     material_weight
 }
 
-// /// uses principle variation search to return the minimax
-// /// of the given position
-// pub fn pvs(board: &Board, mut alpha: f64, beta: f64, depth: u8, line: &mut Vec<String>) -> f64 {
-//     if depth == 0 {
-//         return evaluate_position(board)
-//     }
-//     for rank in 0..8 {
-//         for file in 0..8 {
-//             if let Some(p) = board.board[rank][file] {
-//                 if p.color == board.active_color {
-//                     let legal_moves = logic::get_legal_moves(
-//                         board, Location { rank: rank as u8, file: file as u8 });
-//                     for i in 0..legal_moves.len() {
-//                         if let Some(move_loc) = legal_moves.get(i) {
-//                             let mut newline = Vec::new();
-//                             let original_loc = Location { rank: rank as u8, file: file as u8 };
-//                             let new_board = board.after_move(original_loc, *move_loc);
-//                             let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
-//                             // let hash = zobrist.hash(&new_board);
-//                             // let mut score = 0.0;
-//                             // if table.contains_key(&hash) {
-//                             //     let e_depth = table.get(&hash).unwrap().depth;
-//                             //     let e_eval = table.get(&hash).unwrap().evaluation;
-//                             //     if e_depth >= depth - 1 {
-//                             //         score = e_eval;
-//                             //         newline = table.get(&hash).unwrap().line.clone();
-//                             //     } else {
-//                             //         score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-//                             //         table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-//                             //         depth: depth - 1, evaluation: score, line: line.clone() });
-//                             //     }
-//                             // } else {
-//                             //     score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-//                             //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-//                             //     depth: depth - 1, evaluation: score, line: line.clone() });
-//                             // }
+/// uses principle variation search to return the minimax
+/// of the given position
+pub fn pvs(board: &Board, mut alpha: i32, beta: i32, depth: u8, line: &mut Vec<String>) -> i32 {
+    if depth == 0 {
+        return evaluate_position(&board.board)
+    }
+    for rank in 0..8 {
+        for file in 0..8 {
+            if let Some(p) = board.board.get_piece(Location{rank: rank, file: file}) {
+                if p.color == board.active_color {
+                    let legal_moves = logic::get_legal_moves(
+                        board, Location { rank: rank as u8, file: file as u8 });
+                    for i in 0..legal_moves.len() {
+                        if let Some(move_loc) = legal_moves.get(i) {
+                            let mut newline = Vec::new();
+                            let original_loc = Location { rank: rank as u8, file: file as u8 };
+                            let new_board = board.after_move(original_loc, *move_loc);
+                            let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
+                            // let hash = zobrist.hash(&new_board);
+                            // let mut score = 0.0;
+                            // if table.contains_key(&hash) {
+                            //     let e_depth = table.get(&hash).unwrap().depth;
+                            //     let e_eval = table.get(&hash).unwrap().evaluation;
+                            //     if e_depth >= depth - 1 {
+                            //         score = e_eval;
+                            //         newline = table.get(&hash).unwrap().line.clone();
+                            //     } else {
+                            //         score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //         table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //         depth: depth - 1, evaluation: score, line: line.clone() });
+                            //     }
+                            // } else {
+                            //     score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
+                            //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                            //     depth: depth - 1, evaluation: score, line: line.clone() });
+                            // }
 
-//                             // for checkmate
-//                             if score.is_infinite() {
-//                                 if board.active_color == Color::White && score > 0.0 {
-//                                     line.clear();
-//                                     line.push(original_loc.to_notation());
-//                                     line.push(move_loc.to_notation());
-//                                     line.push(" ".to_owned());
-//                                     for m in &newline {
-//                                         line.push(m.clone());
-//                                     }
-//                                     return score;
-//                                 } else if board.active_color == Color::Black && score > 0.0 {
-//                                     line.clear();
-//                                     line.push(original_loc.to_notation());
-//                                     line.push(move_loc.to_notation());
-//                                     line.push(" ".to_owned());
-//                                     for m in &newline {
-//                                         line.push(m.clone());
-//                                     }
-//                                     return score;
-//                                 }
-//                             }
-//                             if score >= beta {
-//                                 return beta
-//                             }
-//                             if score > alpha {
-//                                 alpha = score;
-//                                 line.clear();
-//                                 line.push(original_loc.to_notation());
-//                                 line.push(move_loc.to_notation());
-//                                 line.push(" ".to_owned());
-//                                 for m in &newline {
-//                                     line.push(m.clone());
-//                                 }
-//                                 // let e_depth = table.get(&hash).unwrap().depth;
-//                                 // let e_eval = table.get(&hash).unwrap().evaluation;
-//                                 // table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-//                                 // depth: e_depth, evaluation: e_eval, line: line.clone() });
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     alpha
-// }
+                            if score >= beta {
+                                return beta
+                            }
+                            if score > alpha {
+                                alpha = score;
+                                line.clear();
+                                line.push(original_loc.to_notation());
+                                line.push(move_loc.to_notation());
+                                line.push(" ".to_owned());
+                                for m in &newline {
+                                    line.push(m.clone());
+                                }
+                                // let e_depth = table.get(&hash).unwrap().depth;
+                                // let e_eval = table.get(&hash).unwrap().evaluation;
+                                // table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
+                                // depth: e_depth, evaluation: e_eval, line: line.clone() });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    alpha
+}

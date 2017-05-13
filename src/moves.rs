@@ -60,6 +60,7 @@ impl State {
         let mut best_move = "".to_owned();
         while depth < 5 {
             let mut line: Vec<String> = Vec::new();
+            // TODO: change evaluation to add moves to line 
             let score = evaluation::evaluate_position(&self.board.board);
             print!("info depth {} score cp {:.0} nodes {} time {} pv ",
                    depth,
