@@ -68,23 +68,24 @@ const MOBILITY_WEIGHT: i32 = 10;
 
 /// returns the evaluation of the position relative to white in centipawns
 pub fn evaluate_position(bitboard: &Bitboard) -> i32 {
-    let pawn_weight = ((bitboard.white_pawns.count_ones() -
-                        bitboard.black_pawns.count_ones()) as i32) *
+    let pawn_weight = (bitboard.white_pawns.count_ones() as i32 -
+                        bitboard.black_pawns.count_ones() as i32) *
                       PAWN_WEIGHT;
-    let knight_weight = ((bitboard.white_knights.count_ones() -
-                          bitboard.black_knights.count_ones()) as i32) *
+    if bitboard.white_pawns.count_ones() < 8 {println!("pawns: {}", bitboard.white_pawns.count_ones());}
+    let knight_weight = (bitboard.white_knights.count_ones() as i32 -
+                          bitboard.black_knights.count_ones() as i32) *
                         KNIGHT_WEIGHT;
-    let bishop_weight = ((bitboard.white_bishops.count_ones() -
-                          bitboard.black_bishops.count_ones()) as i32) *
+    let bishop_weight = (bitboard.white_bishops.count_ones() as i32 -
+                          bitboard.black_bishops.count_ones() as i32) *
                         BISHOP_WEIGHT;
-    let rook_weight = ((bitboard.white_rooks.count_ones() -
-                        bitboard.black_rooks.count_ones()) as i32) *
+    let rook_weight = (bitboard.white_rooks.count_ones() as i32 -
+                        bitboard.black_rooks.count_ones() as i32) *
                       ROOK_WEIGHT;
-    let queen_weight = ((bitboard.white_queens.count_ones() -
-                         bitboard.black_queens.count_ones()) as i32) *
+    let queen_weight = (bitboard.white_queens.count_ones() as i32 -
+                         bitboard.black_queens.count_ones() as i32) *
                        QUEEN_WEIGHT;
-    let king_weight = ((bitboard.white_king.count_ones() - bitboard.black_king.count_ones()) as
-                       i32) *
+    let king_weight = (bitboard.white_king.count_ones() as i32 - 
+                       bitboard.black_king.count_ones() as i32) *
                       KING_WEIGHT;
     let material_weight = pawn_weight + knight_weight + bishop_weight + rook_weight +
                           queen_weight + king_weight;
@@ -109,24 +110,6 @@ pub fn pvs(board: &Board, mut alpha: i32, beta: i32, depth: u8, line: &mut Vec<S
                             let original_loc = Location { rank: rank as u8, file: file as u8 };
                             let new_board = board.after_move(original_loc, *move_loc);
                             let score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline);
-                            // let hash = zobrist.hash(&new_board);
-                            // let mut score = 0.0;
-                            // if table.contains_key(&hash) {
-                            //     let e_depth = table.get(&hash).unwrap().depth;
-                            //     let e_eval = table.get(&hash).unwrap().evaluation;
-                            //     if e_depth >= depth - 1 {
-                            //         score = e_eval;
-                            //         newline = table.get(&hash).unwrap().line.clone();
-                            //     } else {
-                            //         score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-                            //         table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-                            //         depth: depth - 1, evaluation: score, line: line.clone() });
-                            //     }
-                            // } else {
-                            //     score = -pvs(&new_board, -beta, -alpha, depth - 1, &mut newline, table, zobrist);
-                            //     table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-                            //     depth: depth - 1, evaluation: score, line: line.clone() });
-                            // }
 
                             if score >= beta {
                                 return beta
@@ -140,10 +123,6 @@ pub fn pvs(board: &Board, mut alpha: i32, beta: i32, depth: u8, line: &mut Vec<S
                                 for m in &newline {
                                     line.push(m.clone());
                                 }
-                                // let e_depth = table.get(&hash).unwrap().depth;
-                                // let e_eval = table.get(&hash).unwrap().evaluation;
-                                // table.insert(hash, Entry { best_move: (original_loc, move_loc.clone()),
-                                // depth: e_depth, evaluation: e_eval, line: line.clone() });
                             }
                         }
                     }
