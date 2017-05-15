@@ -443,4 +443,67 @@ mod test {
         bitboard.after_move(start, end);
         assert_eq!(control, bitboard);
     }
+
+    #[test]
+    fn test_after_move_capture() {
+        let control = Bitboard::from_fen("r1bqkb1r/pppp1ppp/2B2n2/4p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 0 4")
+            .unwrap();
+        let mut bitboard = Bitboard::from_fen("r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4")
+            .unwrap();
+        let start = Location { rank: 4, file: 1 };
+        let end = Location { rank: 5, file: 2 };
+        bitboard.after_move(start, end);
+        assert_eq!(control, bitboard);
+    }
+
+    #[test]
+    fn test_get_entire_board_start() {
+        let control = 0xFFFF00000000FFFF;
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
+        assert_eq!(control, bitboard.get_entire_board());
+    }
+
+    #[test]
+    fn test_get_entire_board_end() {
+        let control = 0;
+        let bitboard = Bitboard::from_fen("8/8/8/8/8/8/8/8 w KQkq - 0 1").unwrap();
+        assert_eq!(control, bitboard.get_entire_board());
+    }
+
+    #[test]
+    fn test_get_white_pieces() {
+        let control = 0xFFFF;
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
+        assert_eq!(control, bitboard.get_white_pieces());
+    }
+
+    #[test]
+    fn test_get_white_pieces_end() {
+        let control = 0;
+        let bitboard = Bitboard::from_fen("8/8/8/8/8/8/8/8 w KQkq - 0 1").unwrap();
+        assert_eq!(control, bitboard.get_white_pieces());
+    }
+
+    #[test]
+    fn test_get_black_pieces() {
+        let control = 0xFFFF000000000000;
+        let bitboard = Bitboard::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .unwrap();
+        assert_eq!(control, bitboard.get_black_pieces());
+    }
+
+    #[test] 
+    fn test_promote_pawns_promote() {
+        let control = Bitboard::from_fen("Qn1qkb1r/p2bpppp/5n2/8/8/8/PPPP1PPP/RNBQKBNR b KQk - 0 5")
+            .unwrap(); 
+        let mut bitboard = Bitboard::from_fen("rn1qkb1r/pP1bpppp/5n2/8/8/8/PPPP1PPP/RNBQKBNR w KQkq - 1 5")
+            .unwrap();
+        let start = Location { rank: 6, file: 1 };
+        let end = Location { rank: 7, file: 0 };
+        bitboard.after_move(start, end);
+        bitboard.promote_pawns();
+        assert_eq!(control, bitboard);
+    }
 }
