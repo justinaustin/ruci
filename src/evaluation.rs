@@ -1,6 +1,5 @@
 use std::cell::RefMut;
 use std::collections::HashMap;
-use std::f64;
 
 use board::{Board, Location};
 use bitboard::Bitboard;
@@ -71,7 +70,6 @@ pub fn evaluate_position(bitboard: &Bitboard) -> i32 {
     let pawn_weight = (bitboard.white_pawns.count_ones() as i32 -
                         bitboard.black_pawns.count_ones() as i32) *
                       PAWN_WEIGHT;
-    if bitboard.white_pawns.count_ones() < 8 {println!("pawns: {}", bitboard.white_pawns.count_ones());}
     let knight_weight = (bitboard.white_knights.count_ones() as i32 -
                           bitboard.black_knights.count_ones() as i32) *
                         KNIGHT_WEIGHT;

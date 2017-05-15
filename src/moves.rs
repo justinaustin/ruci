@@ -58,7 +58,7 @@ impl State {
     pub fn go(&mut self) {
         let mut depth = 1;
         let mut best_move = "".to_owned();
-        while depth < 7 {
+        while depth < 6 {
             let mut line: Vec<String> = Vec::new();
             let score = evaluation::pvs(&self.board, -5000, 5000, depth, &mut line);
             print!("info depth {} score cp {:.0} nodes {} time {} pv ",
