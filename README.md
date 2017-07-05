@@ -1,7 +1,7 @@
 # ruci
 This project was submitted ([this commit](https://github.com/justinaustin/ruci/commit/87b171d927f6cbfca6529b632982f504f98d5edc)) by Justin Austin as my final project for [CIS 198](//cis198-2016f.github.io) at the University of Pennsylvania in fall 2016.
 
-While this project was completed for a course, I plan to continue development in my spare time. 
+While this project was completed for a course, I plan to continue development in my spare time. This project is currently undergoing a major rewrite in the `bitboard` branch.
 
 ## About
 This project is a Rust Universal Chess Interface (ruci) engine. This engine uses the Alpha Beta Search algorithm along with a simple evaluation function in order to calculate the best move. This engine should work with all chess GUIs that support UCI, though I have only tested it with GNU XBoard and Scid vs. PC. 
